@@ -63,19 +63,23 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-        boda: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
-        }
+				// New color system as requested
+				boda: {
+					primary: '#32CD32',   // Vibrant green
+					secondary: '#F5F5F5', // Light gray
+					accent: '#2196F3',    // Bright blue
+					50: '#f2fff2',
+					100: '#e5ffe5',
+					200: '#ccffcc',
+					300: '#99ff99',
+					400: '#66ff66',
+					500: '#32CD32',
+					600: '#2ca52c',
+					700: '#257d25',
+					800: '#1e661e',
+					900: '#184d18',
+					950: '#0d260d',
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

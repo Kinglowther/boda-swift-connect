@@ -5,33 +5,33 @@
 
 @layer base {
   :root {
-    --background: 260 50% 98%;
-    --foreground: 260 10% 10%;
+    --background: 120 50% 98%;
+    --foreground: 120 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 260 10% 10%;
+    --card-foreground: 120 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 260 10% 10%;
+    --popover-foreground: 120 10% 10%;
 
-    --primary: 265 83% 45%;
+    --primary: 120 66% 50%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 260 40% 96%;
-    --secondary-foreground: 260 30% 30%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 120 10% 20%;
 
-    --muted: 260 40% 96%;
-    --muted-foreground: 260 20% 40%;
+    --muted: 120 10% 96%;
+    --muted-foreground: 120 10% 40%;
 
-    --accent: 265 83% 96%;
-    --accent-foreground: 265 83% 35%;
+    --accent: 200 80% 54%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 265 83% 45%;
+    --border: 120 10% 90%;
+    --input: 120 10% 90%;
+    --ring: 120 66% 50%;
 
     --radius: 1rem;
 
@@ -46,33 +46,33 @@
   }
 
   .dark {
-    --background: 260 15% 10%;
-    --foreground: 260 10% 95%;
+    --background: 120 15% 10%;
+    --foreground: 120 10% 95%;
 
-    --card: 260 15% 15%;
-    --card-foreground: 260 10% 95%;
+    --card: 120 15% 15%;
+    --card-foreground: 120 10% 95%;
 
-    --popover: 260 15% 15%;
-    --popover-foreground: 260 10% 95%;
+    --popover: 120 15% 15%;
+    --popover-foreground: 120 10% 95%;
 
-    --primary: 265 83% 45%;
+    --primary: 120 66% 50%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 260 15% 25%;
-    --secondary-foreground: 260 10% 95%;
+    --secondary: 120 15% 25%;
+    --secondary-foreground: 120 10% 95%;
 
-    --muted: 260 15% 25%;
-    --muted-foreground: 260 10% 70%;
+    --muted: 120 15% 25%;
+    --muted-foreground: 120 10% 70%;
 
-    --accent: 265 83% 20%;
-    --accent-foreground: 265 83% 90%;
+    --accent: 200 80% 54%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 260 10% 95%;
+    --destructive-foreground: 120 10% 95%;
 
-    --border: 260 15% 25%;
-    --input: 260 15% 25%;
-    --ring: 265 83% 45%;
+    --border: 120 15% 25%;
+    --input: 120 15% 25%;
+    --ring: 120 66% 50%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -98,7 +98,7 @@
 
 @layer components {
   .boda-btn {
-    @apply relative overflow-hidden rounded-full bg-boda-600 text-white font-medium px-5 py-3 transition-all hover:bg-boda-700 active:bg-boda-800 focus:outline-none focus:ring-2 focus:ring-boda-500 focus:ring-offset-2;
+    @apply relative overflow-hidden rounded-full bg-boda-primary text-white font-medium px-5 py-3 transition-all hover:bg-boda-600 active:bg-boda-700 focus:outline-none focus:ring-2 focus:ring-boda-500 focus:ring-offset-2;
   }
   
   .boda-card {
@@ -106,10 +106,14 @@
   }
   
   .boda-input {
-    @apply rounded-lg border border-boda-200 focus:border-boda-500 focus:ring focus:ring-boda-200 focus:ring-opacity-50;
+    @apply rounded-lg border border-boda-200 focus:border-boda-primary focus:ring focus:ring-boda-200 focus:ring-opacity-50;
   }
 
   .ripple-effect {
     @apply absolute bg-white bg-opacity-30 rounded-full animate-ripple;
+  }
+
+  .accent-btn {
+    @apply relative overflow-hidden rounded-full bg-boda-accent text-white font-medium px-5 py-3 transition-all hover:bg-blue-500 active:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2;
   }
 }

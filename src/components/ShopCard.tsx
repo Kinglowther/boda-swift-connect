@@ -11,7 +11,7 @@ interface ShopCardProps {
 const ShopCard: React.FC<ShopCardProps> = ({ shop, onSelect }) => {
   return (
     <div className="boda-card animate-fade-in">
-      <div className="w-full h-40 bg-boda-100 rounded-lg mb-3 overflow-hidden">
+      <div className="w-full h-40 bg-boda-50 rounded-lg mb-3 overflow-hidden">
         <img 
           src={shop.image} 
           alt={shop.name} 
@@ -23,7 +23,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop, onSelect }) => {
       <p className="text-sm text-gray-700 mb-3">{shop.description}</p>
       <Button 
         onClick={() => onSelect(shop)} 
-        className="w-full bg-boda-600 hover:bg-boda-700"
+        className="w-full bg-boda-primary hover:bg-boda-600"
       >
         Select
       </Button>
