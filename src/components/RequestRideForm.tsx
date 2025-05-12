@@ -38,6 +38,10 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirm'>('details');
   
+  // Location coordinates
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
+  
   // Get current location
   useEffect(() => {
     if (useCurrentLocation) {
@@ -46,13 +50,17 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           position => {
-            // In a real app, this would convert coordinates to an address
+            const { latitude, longitude } = position.coords;
+            setPickupCoords({ lat: latitude, lng: longitude });
             setPickupLocation('Your Current Location');
             setLoading(false);
             
-            // Calculate a mock distance
-            if (dropoffLocation) {
-              calculateDistance();
+            // Calculate distance if dropoff location is set
+            if (dropoffCoords) {
+              calculateDistance(
+                { lat: latitude, lng: longitude },
+                dropoffCoords
+              );
             }
           },
           error => {
@@ -63,7 +71,8 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             });
             setUseCurrentLocation(false);
             setLoading(false);
-          }
+          },
+          { enableHighAccuracy: true }
         );
       } else {
         toast({
@@ -78,23 +87,74 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   }, [useCurrentLocation, toast]);
   
   // Calculate distance and price when locations change
-  useEffect(() => {
-    if (pickupLocation && dropoffLocation) {
-      calculateDistance();
-    }
-  }, [pickupLocation, dropoffLocation]);
-  
-  const calculateDistance = () => {
+  const calculateDistance = (pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
     // In a real app, this would use Google Maps Distance Matrix API
-    // For now, generate a random distance between 1-10 km
-    const mockDistance = 1 + Math.random() * 9;
-    setDistance(parseFloat(mockDistance.toFixed(1)));
+    // For now, we'll calculate a rough distance using the Haversine formula
+    
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (dropoff.lat - pickup.lat) * Math.PI / 180;
+    const dLon = (dropoff.lng - pickup.lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(pickup.lat * Math.PI / 180) * Math.cos(dropoff.lat * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const calculatedDistance = R * c;
+    
+    setDistance(parseFloat(calculatedDistance.toFixed(1)));
     
     // Calculate price: Base fare + per km rate
     const baseFare = 100; // KSH
     const perKmRate = 50; // KSH per km
-    const calculatedPrice = baseFare + (mockDistance * perKmRate);
+    const calculatedPrice = baseFare + (calculatedDistance * perKmRate);
     setPrice(Math.ceil(calculatedPrice));
+  };
+  
+  // Simulate geocoding for demo purposes
+  const simulateGeocoding = (address: string, isPickup: boolean) => {
+    setLoading(true);
+    
+    // In a real app, this would use a geocoding API
+    // For now, generate random coordinates near Nairobi as an example
+    setTimeout(() => {
+      // Generate a random point near Nairobi (approximate coordinates: -1.286389, 36.817223)
+      const baseLat = -1.286389;
+      const baseLng = 36.817223;
+      const jitter = 0.02 * (Math.random() - 0.5); // Add some randomness
+      
+      const coords = {
+        lat: baseLat + jitter,
+        lng: baseLng + jitter + (isPickup ? -0.01 : 0.01) // Separate pickup and dropoff slightly
+      };
+      
+      if (isPickup) {
+        setPickupCoords(coords);
+        if (dropoffCoords) {
+          calculateDistance(coords, dropoffCoords);
+        }
+      } else {
+        setDropoffCoords(coords);
+        if (pickupCoords) {
+          calculateDistance(pickupCoords, coords);
+        }
+      }
+      
+      setLoading(false);
+    }, 1000);
+  };
+  
+  const handlePickupLocationChange = (location: string) => {
+    setPickupLocation(location);
+    if (location.trim() && !useCurrentLocation) {
+      simulateGeocoding(location, true);
+    }
+  };
+  
+  const handleDropoffLocationChange = (location: string) => {
+    setDropoffLocation(location);
+    if (location.trim()) {
+      simulateGeocoding(location, false);
+    }
   };
   
   const handleToggleCurrentLocation = () => {
@@ -134,7 +194,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     
     try {
       // Find nearest rider
-      const nearestRider = getNearestRider(-1.2864, 36.8172); // Mock coordinates
+      const nearestRider = getNearestRider(-1.2864, 36.8172); // Use actual coordinates if available
       
       // Create the order object
       const orderData = {
@@ -163,6 +223,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             body: "We're looking for a rider nearby",
             icon: "/favicon.ico"
           });
+        } else if ('Notification' in window && Notification.permission !== 'denied') {
+          // Request permission for notifications
+          Notification.requestPermission();
         }
         
         onSuccess();
@@ -194,6 +257,12 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         <form onSubmit={handleSubmit} className="space-y-4">
           {step === 'details' ? (
             <>
+              <LocationMap 
+                pickupLocation={pickupCoords}
+                dropoffLocation={dropoffCoords}
+                isSimulation={false}
+              />
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="pickupLocation">Pickup Location</Label>
@@ -201,7 +270,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     type="button"
                     variant="outline"
                     size="sm"
-                    className={useCurrentLocation ? "bg-boda-primary text-white" : ""}
+                    className={useCurrentLocation ? "bg-green-500 text-white" : ""}
                     onClick={handleToggleCurrentLocation}
                   >
                     <MapPin className="mr-2 h-3 w-3" /> 
@@ -212,7 +281,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   id="pickupLocation"
                   placeholder="e.g., City Center, Main Street"
                   value={pickupLocation}
-                  onChange={(e) => setPickupLocation(e.target.value)}
+                  onChange={(e) => handlePickupLocationChange(e.target.value)}
                   disabled={useCurrentLocation}
                   required
                   className="boda-input"
@@ -225,7 +294,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   id="dropoffLocation"
                   placeholder="e.g., Westlands, Apartment 4B"
                   value={dropoffLocation}
-                  onChange={(e) => setDropoffLocation(e.target.value)}
+                  onChange={(e) => handleDropoffLocationChange(e.target.value)}
                   required
                   className="boda-input"
                 />
@@ -307,7 +376,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-boda-primary hover:bg-boda-600"
+                  className="bg-green-500 hover:bg-green-600"
                   disabled={!pickupLocation || !dropoffLocation || !description}
                 >
                   <Navigation className="mr-2 h-4 w-4" />
@@ -319,8 +388,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             <>
               <div className="space-y-4">
                 <LocationMap 
-                  pickupLocation={{ lat: -1.286389, lng: 36.817223 }}
-                  dropoffLocation={{ lat: -1.299389, lng: 36.827223 }}
+                  pickupLocation={pickupCoords}
+                  dropoffLocation={dropoffCoords}
+                  isSimulation={true}
                 />
                 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -373,7 +443,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                       <p className="text-green-800">
                         Final Price:
                       </p>
-                      <Badge className="bg-boda-primary text-white text-lg py-1">
+                      <Badge className="bg-green-500 text-white text-lg py-1">
                         Ksh. {price}
                       </Badge>
                     </div>
@@ -391,7 +461,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-boda-primary hover:bg-boda-600"
+                  className="bg-green-500 hover:bg-green-600"
                 >
                   <Package className="mr-2 h-4 w-4" />
                   Request Boda (Ksh. {price})

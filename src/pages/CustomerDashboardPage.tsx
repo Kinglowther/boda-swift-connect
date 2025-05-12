@@ -7,20 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrder } from '@/contexts/OrderContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import ShopCard from '@/components/ShopCard';
 import OrderItem from '@/components/OrderItem';
-import { Shop } from '@/types';
-import { Package, Bike, MapPin } from 'lucide-react';
+import { Bike, MapPin } from 'lucide-react';
 import RequestRideForm from '@/components/RequestRideForm';
 
 const CustomerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getOrdersByUserId, shops } = useOrder();
-
-  // Order form state
-  const [orderType, setOrderType] = useState<'shop' | 'custom'>('shop');
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const { getOrdersByUserId } = useOrder();
 
   // New order form visibility
   const [showNewOrderForm, setShowNewOrderForm] = useState(false);
@@ -28,22 +22,13 @@ const CustomerDashboardPage: React.FC = () => {
   // Get user's orders
   const userOrders = user ? getOrdersByUserId(user.id) : [];
 
-  // Handle shop selection
-  const handleSelectShop = (shop: Shop) => {
-    setSelectedShop(shop);
-  };
-
   // Handle order form cancel
   const handleCancelOrderForm = () => {
-    setOrderType('shop');
-    setSelectedShop(null);
     setShowNewOrderForm(false);
   };
 
   // Handle order success
   const handleOrderSuccess = () => {
-    setOrderType('shop');
-    setSelectedShop(null);
     setShowNewOrderForm(false);
   };
 
@@ -57,7 +42,7 @@ const CustomerDashboardPage: React.FC = () => {
               <p className="text-gray-600">Manage your deliveries and requests</p>
             </div>
             <Button 
-              className="bg-boda-primary hover:bg-boda-600"
+              className="bg-green-500 hover:bg-green-600 text-white"
               onClick={() => setShowNewOrderForm(!showNewOrderForm)}
             >
               {showNewOrderForm ? 'Cancel' : 'Request New Boda'}
@@ -65,52 +50,10 @@ const CustomerDashboardPage: React.FC = () => {
           </div>
 
           {showNewOrderForm ? (
-            <>
-              <div className="flex space-x-4">
-                <Button
-                  type="button"
-                  variant={orderType === 'shop' ? 'default' : 'outline'}
-                  onClick={() => setOrderType('shop')}
-                  className={orderType === 'shop' ? 'bg-boda-primary hover:bg-boda-600' : ''}
-                >
-                  <Package className="mr-2 h-4 w-4" />
-                  Shop Pickup
-                </Button>
-                <Button
-                  type="button"
-                  variant={orderType === 'custom' ? 'default' : 'outline'}
-                  onClick={() => setOrderType('custom')}
-                  className={orderType === 'custom' ? 'bg-boda-primary hover:bg-boda-600' : ''}
-                >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Custom Location
-                </Button>
-              </div>
-
-              {orderType === 'shop' && !selectedShop ? (
-                <Card className="animate-fade-in">
-                  <CardHeader>
-                    <CardTitle>Select a Shop</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {shops.map(shop => (
-                        <ShopCard 
-                          key={shop.id} 
-                          shop={shop} 
-                          onSelect={handleSelectShop} 
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <RequestRideForm 
-                  onCancel={handleCancelOrderForm} 
-                  onSuccess={handleOrderSuccess}
-                />
-              )}
-            </>
+            <RequestRideForm 
+              onCancel={handleCancelOrderForm} 
+              onSuccess={handleOrderSuccess}
+            />
           ) : (
             <Tabs defaultValue="active" className="w-full">
               <TabsList>
@@ -134,7 +77,7 @@ const CustomerDashboardPage: React.FC = () => {
                     <div className="col-span-2 p-8 text-center">
                       <p>You don't have any active orders.</p>
                       <Button 
-                        className="mt-4 bg-boda-primary hover:bg-boda-600"
+                        className="mt-4 bg-green-500 hover:bg-green-600"
                         onClick={() => setShowNewOrderForm(true)}
                       >
                         Request New Boda
@@ -170,7 +113,7 @@ const CustomerDashboardPage: React.FC = () => {
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold">You need to log in to view this page</h2>
           <Button 
-            className="mt-4 bg-boda-primary hover:bg-boda-600"
+            className="mt-4 bg-green-500 hover:bg-green-600"
             onClick={() => navigate('/login')}
           >
             Login
