@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '@/contexts/OrderContext';
 import { useRider } from '@/contexts/RiderContext';
@@ -17,6 +16,13 @@ import LoadingSpinner from './LoadingSpinner';
 interface RequestRideFormProps {
   onCancel: () => void;
   onSuccess: () => void;
+}
+
+declare global {
+  interface Window {
+    google: any;
+    initAutocomplete: () => void;
+  }
 }
 
 const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }) => {
@@ -42,6 +48,64 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
   
+  // References for Google Maps autocomplete
+  const pickupInputRef = React.useRef<HTMLInputElement>(null);
+  const dropoffInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Initialize Google Maps Autocomplete
+  useEffect(() => {
+    // Only initialize if Google Maps API is loaded
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      return;
+    }
+    
+    // Initialize autocomplete for pickup location
+    if (pickupInputRef.current && !useCurrentLocation) {
+      const pickupAutocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current);
+      pickupAutocomplete.addListener('place_changed', () => {
+        const place = pickupAutocomplete.getPlace();
+        if (place.geometry && place.geometry.location) {
+          setPickupLocation(place.formatted_address || place.name);
+          setPickupCoords({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          });
+          
+          // Calculate distance if dropoff is set
+          if (dropoffCoords) {
+            calculateDistanceWithGoogle(
+              { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() },
+              dropoffCoords
+            );
+          }
+        }
+      });
+    }
+    
+    // Initialize autocomplete for dropoff location
+    if (dropoffInputRef.current) {
+      const dropoffAutocomplete = new window.google.maps.places.Autocomplete(dropoffInputRef.current);
+      dropoffAutocomplete.addListener('place_changed', () => {
+        const place = dropoffAutocomplete.getPlace();
+        if (place.geometry && place.geometry.location) {
+          setDropoffLocation(place.formatted_address || place.name);
+          setDropoffCoords({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          });
+          
+          // Calculate distance if pickup is set
+          if (pickupCoords) {
+            calculateDistanceWithGoogle(
+              pickupCoords,
+              { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }
+            );
+          }
+        }
+      });
+    }
+  }, [useCurrentLocation]);
+  
   // Get current location
   useEffect(() => {
     if (useCurrentLocation) {
@@ -49,15 +113,32 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
       
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
-          position => {
+          async position => {
             const { latitude, longitude } = position.coords;
             setPickupCoords({ lat: latitude, lng: longitude });
-            setPickupLocation('Your Current Location');
+            
+            // Reverse geocode to get address
+            try {
+              const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`
+              );
+              const data = await response.json();
+              
+              if (data.results && data.results[0]) {
+                setPickupLocation(data.results[0].formatted_address);
+              } else {
+                setPickupLocation('Your Current Location');
+              }
+            } catch (error) {
+              console.error('Error reverse geocoding:', error);
+              setPickupLocation('Your Current Location');
+            }
+            
             setLoading(false);
             
             // Calculate distance if dropoff location is set
             if (dropoffCoords) {
-              calculateDistance(
+              calculateDistanceWithGoogle(
                 { lat: latitude, lng: longitude },
                 dropoffCoords
               );
@@ -86,11 +167,43 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     }
   }, [useCurrentLocation, toast]);
   
-  // Calculate distance and price when locations change
-  const calculateDistance = (pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
-    // In a real app, this would use Google Maps Distance Matrix API
-    // For now, we'll calculate a rough distance using the Haversine formula
+  // Calculate distance using Google Maps Distance Matrix API
+  const calculateDistanceWithGoogle = (pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
+    if (!window.google || !window.google.maps) {
+      // Fallback to Haversine formula
+      calculateDistance(pickup, dropoff);
+      return;
+    }
     
+    const service = new window.google.maps.DistanceMatrixService();
+    service.getDistanceMatrix(
+      {
+        origins: [new window.google.maps.LatLng(pickup.lat, pickup.lng)],
+        destinations: [new window.google.maps.LatLng(dropoff.lat, dropoff.lng)],
+        travelMode: 'DRIVING'
+      },
+      (response: any, status: string) => {
+        if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
+          const distanceValue = response.rows[0].elements[0].distance.value; // in meters
+          const distanceInKm = distanceValue / 1000;
+          
+          setDistance(parseFloat(distanceInKm.toFixed(1)));
+          
+          // Calculate price: Base fare + per km rate
+          const baseFare = 100; // KSH
+          const perKmRate = 50; // KSH per km
+          const calculatedPrice = baseFare + (distanceInKm * perKmRate);
+          setPrice(Math.ceil(calculatedPrice));
+        } else {
+          // Fallback to Haversine formula
+          calculateDistance(pickup, dropoff);
+        }
+      }
+    );
+  };
+  
+  // Fallback distance calculation using Haversine formula
+  const calculateDistance = (pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
     const R = 6371; // Radius of the Earth in km
     const dLat = (dropoff.lat - pickup.lat) * Math.PI / 180;
     const dLon = (dropoff.lng - pickup.lng) * Math.PI / 180;
@@ -110,51 +223,15 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     setPrice(Math.ceil(calculatedPrice));
   };
   
-  // Simulate geocoding for demo purposes
-  const simulateGeocoding = (address: string, isPickup: boolean) => {
-    setLoading(true);
-    
-    // In a real app, this would use a geocoding API
-    // For now, generate random coordinates near Nairobi as an example
-    setTimeout(() => {
-      // Generate a random point near Nairobi (approximate coordinates: -1.286389, 36.817223)
-      const baseLat = -1.286389;
-      const baseLng = 36.817223;
-      const jitter = 0.02 * (Math.random() - 0.5); // Add some randomness
-      
-      const coords = {
-        lat: baseLat + jitter,
-        lng: baseLng + jitter + (isPickup ? -0.01 : 0.01) // Separate pickup and dropoff slightly
-      };
-      
-      if (isPickup) {
-        setPickupCoords(coords);
-        if (dropoffCoords) {
-          calculateDistance(coords, dropoffCoords);
-        }
-      } else {
-        setDropoffCoords(coords);
-        if (pickupCoords) {
-          calculateDistance(pickupCoords, coords);
-        }
-      }
-      
-      setLoading(false);
-    }, 1000);
-  };
-  
   const handlePickupLocationChange = (location: string) => {
     setPickupLocation(location);
-    if (location.trim() && !useCurrentLocation) {
-      simulateGeocoding(location, true);
+    if (useCurrentLocation) {
+      setUseCurrentLocation(false);
     }
   };
   
   const handleDropoffLocationChange = (location: string) => {
     setDropoffLocation(location);
-    if (location.trim()) {
-      simulateGeocoding(location, false);
-    }
   };
   
   const handleToggleCurrentLocation = () => {
@@ -194,7 +271,13 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     
     try {
       // Find nearest rider
-      const nearestRider = getNearestRider(-1.2864, 36.8172); // Use actual coordinates if available
+      let nearestRiderLocation = { lat: -1.2864, lng: 36.8172 }; // Default location
+      
+      if (pickupCoords) {
+        nearestRiderLocation = pickupCoords;
+      }
+      
+      const nearestRider = getNearestRider(nearestRiderLocation.lat, nearestRiderLocation.lng);
       
       // Create the order object
       const orderData = {
@@ -204,6 +287,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         description,
         recipientName,
         recipientPhone,
+        price: price
       };
       
       // Place the order
@@ -285,6 +369,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   disabled={useCurrentLocation}
                   required
                   className="boda-input"
+                  ref={pickupInputRef}
                 />
               </div>
 
@@ -297,6 +382,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   onChange={(e) => handleDropoffLocationChange(e.target.value)}
                   required
                   className="boda-input"
+                  ref={dropoffInputRef}
                 />
               </div>
 
