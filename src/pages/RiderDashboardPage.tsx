@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -101,12 +100,10 @@ const RiderDashboardPage: React.FC = () => {
   };
   
   // Handle rider status toggle
-  const handleStatusToggle = (newStatus: 'available' | 'offline' = 'auto') => {
+  const handleStatusToggle = (newStatus?: 'available' | 'offline') => {
     if (rider) {
-      // If auto, toggle the current status
-      const status = newStatus === 'auto' 
-        ? (rider.status === 'available' ? 'offline' : 'available')
-        : newStatus;
+      // If newStatus is not provided, toggle between available and offline
+      const status = newStatus || (rider.status === 'available' ? 'offline' : 'available');
         
       updateRiderStatus(rider.id, status);
       setRider({...rider, status});
