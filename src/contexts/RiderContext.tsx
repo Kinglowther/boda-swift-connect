@@ -33,7 +33,11 @@ const mockRiders: Rider[] = [
     licenseNumber: 'DL001234',
     profileImage: '/placeholder.svg',
     idImage: '/placeholder.svg',
+    idBackImage: '/placeholder.svg',
     licenseImage: '/placeholder.svg',
+    licenseBackImage: '/placeholder.svg',
+    vehicleRegFrontImage: '/placeholder.svg',
+    vehicleRegBackImage: '/placeholder.svg',
     status: 'available',
     location: { lat: -1.286389, lng: 36.817223 }
   },
@@ -46,7 +50,11 @@ const mockRiders: Rider[] = [
     licenseNumber: 'DL002345',
     profileImage: '/placeholder.svg',
     idImage: '/placeholder.svg',
+    idBackImage: '/placeholder.svg',
     licenseImage: '/placeholder.svg',
+    licenseBackImage: '/placeholder.svg',
+    vehicleRegFrontImage: '/placeholder.svg',
+    vehicleRegBackImage: '/placeholder.svg',
     status: 'offline',
     location: { lat: -1.289389, lng: 36.827223 }
   }
@@ -101,8 +109,13 @@ export const RiderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       licenseNumber: riderData.licenseNumber || '',
       profileImage: riderData.profileImage || '/placeholder.svg',
       idImage: riderData.idImage || '/placeholder.svg',
+      idBackImage: riderData.idBackImage || '/placeholder.svg',
       licenseImage: riderData.licenseImage || '/placeholder.svg',
-      status: 'offline'
+      licenseBackImage: riderData.licenseBackImage || '/placeholder.svg',
+      vehicleRegFrontImage: riderData.vehicleRegFrontImage || '/placeholder.svg',
+      vehicleRegBackImage: riderData.vehicleRegBackImage || '/placeholder.svg',
+      status: 'available',
+      location: { lat: -1.286389 + Math.random() * 0.01, lng: 36.817223 + Math.random() * 0.01 }
     };
     
     setRiders(prev => [...prev, newRider]);

@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { UserPlus } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { UserPlus, User, Bike } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -16,27 +16,57 @@ const RegisterPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('customer');
+  const [role, setRole] = useState<'customer' | 'rider'>('customer');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleRoleChange = (newRole: 'customer' | 'rider') => {
+    setRole(newRole);
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Form validation
     if (password !== confirmPassword) {
-      // Use toast or error state instead in a real app
-      alert("Passwords don't match");
+      toast({
+        variant: "destructive",
+        title: "Passwords don't match",
+        description: "Please ensure both passwords match.",
+      });
+      return;
+    }
+    
+    // For rider role, redirect to the rider registration page
+    if (role === 'rider') {
+      // Store basic info in session storage temporarily
+      sessionStorage.setItem('riderBasicInfo', JSON.stringify({
+        name,
+        email,
+        phone,
+        password
+      }));
+      
+      // Redirect to rider registration page
+      navigate('/rider-registration');
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      const success = await register(name, email, phone, password, role as any);
+      // Only register customers here, riders will be registered after document submission
+      const success = await register(name, email, phone, password, role);
       if (success) {
-        navigate('/');
-      } 
+        // For customers, give them Shujaa points
+        toast({
+          title: "Congratulations!",
+          description: "You've earned 100 Shujaa points for signing up!",
+        });
+        navigate('/customer-dashboard');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -44,15 +74,37 @@ const RegisterPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-md mx-auto mt-8">
+      <div className="max-w-lg mx-auto mt-8">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">Create an Account</h1>
           <p className="text-gray-600 mt-2">
-            Join BodaDispatch for fast and reliable deliveries
+            Join Boda for fast and reliable delivery services
           </p>
         </div>
         
         <div className="boda-card py-6">
+          {/* Role Selection */}
+          <div className="flex justify-center mb-6 gap-4">
+            <Button
+              type="button"
+              variant={role === 'customer' ? 'default' : 'outline'}
+              className={`flex-1 ${role === 'customer' ? 'boda-btn' : ''}`}
+              onClick={() => handleRoleChange('customer')}
+            >
+              <User className="mr-2 h-4 w-4" />
+              Register as Customer
+            </Button>
+            <Button
+              type="button"
+              variant={role === 'rider' ? 'default' : 'outline'}
+              className={`flex-1 ${role === 'rider' ? 'boda-btn' : ''}`}
+              onClick={() => handleRoleChange('rider')}
+            >
+              <Bike className="mr-2 h-4 w-4" />
+              Register as Rider
+            </Button>
+          </div>
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -67,11 +119,11 @@ const RegisterPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -96,10 +148,10 @@ const RegisterPage: React.FC = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="boda-input"
               />
             </div>
@@ -109,30 +161,12 @@ const RegisterPage: React.FC = () => {
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                minLength={6}
                 className="boda-input"
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Account Type</Label>
-              <RadioGroup 
-                value={role}
-                onValueChange={setRole}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="customer" id="customer" />
-                  <Label htmlFor="customer">Customer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="rider" id="rider" />
-                  <Label htmlFor="rider">Rider</Label>
-                </div>
-              </RadioGroup>
             </div>
             
             <Button 
@@ -145,7 +179,7 @@ const RegisterPage: React.FC = () => {
               ) : (
                 <>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Register
+                  {role === 'customer' ? 'Create Account' : 'Continue to Document Upload'}
                 </>
               )}
             </Button>

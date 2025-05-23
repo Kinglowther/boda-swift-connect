@@ -1,43 +1,85 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRider } from '@/contexts/RiderContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Bike, Upload, Camera } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const RiderRegistrationPage: React.FC = () => {
+  // Get basic info from session storage if available
+  const [basicInfo, setBasicInfo] = useState<any>(null);
+  
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [bikeRegNumber, setBikeRegNumber] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [vehicleRegFront, setVehicleRegFront] = useState<File | null>(null);
+  const [vehicleRegFrontPreview, setVehicleRegFrontPreview] = useState<string | null>(null);
   const [vehicleRegBack, setVehicleRegBack] = useState<File | null>(null);
+  const [vehicleRegBackPreview, setVehicleRegBackPreview] = useState<string | null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
+  const [licenseFrontPreview, setLicenseFrontPreview] = useState<string | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
+  const [licenseBackPreview, setLicenseBackPreview] = useState<string | null>(null);
   const [idFront, setIdFront] = useState<File | null>(null);
+  const [idFrontPreview, setIdFrontPreview] = useState<string | null>(null);
   const [idBack, setIdBack] = useState<File | null>(null);
+  const [idBackPreview, setIdBackPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { registerRider } = useRider();
+  const { register } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  const handleFileChange = (file: File | null, setter: (file: File | null) => void) => {
+  useEffect(() => {
+    // Retrieve basic info from session storage
+    const storedInfo = sessionStorage.getItem('riderBasicInfo');
+    if (storedInfo) {
+      const parsedInfo = JSON.parse(storedInfo);
+      setBasicInfo(parsedInfo);
+      setName(parsedInfo.name || '');
+      setEmail(parsedInfo.email || '');
+      setPhone(parsedInfo.phone || '');
+      setPassword(parsedInfo.password || '');
+    }
+  }, []);
+  
+  const handleFileChange = (file: File | null, setter: (file: File | null) => void, previewSetter: (preview: string | null) => void) => {
     setter(file);
+    
+    // Create and set preview URL
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previewSetter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewSetter(null);
+    }
   };
 
   const FileUploadField = ({ 
     label, 
     file, 
+    preview,
     onChange, 
     accept = "image/*" 
   }: { 
     label: string; 
-    file: File | null; 
+    file: File | null;
+    preview: string | null;
     onChange: (file: File | null) => void;
     accept?: string;
   }) => (
@@ -47,7 +89,23 @@ const RiderRegistrationPage: React.FC = () => {
         <input
           type="file"
           accept={accept}
-          onChange={(e) => onChange(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const selectedFile = e.target.files?.[0] || null;
+            if (selectedFile) {
+              handleFileChange(selectedFile, onChange, preview === null ? 
+                (() => {}) : // This is a placeholder function that does nothing
+                (previewUrl) => {
+                  // Here we determine which preview state to update based on the file type
+                  if (label.includes("Profile")) setProfilePhotoPreview(previewUrl);
+                  else if (label.includes("Registration Front")) setVehicleRegFrontPreview(previewUrl);
+                  else if (label.includes("Registration Back")) setVehicleRegBackPreview(previewUrl);
+                  else if (label.includes("License Front")) setLicenseFrontPreview(previewUrl);
+                  else if (label.includes("License Back")) setLicenseBackPreview(previewUrl);
+                  else if (label.includes("ID Front")) setIdFrontPreview(previewUrl);
+                  else if (label.includes("ID Back")) setIdBackPreview(previewUrl);
+              });
+            }
+          }}
           className="hidden"
           id={label.replace(/\s+/g, '-').toLowerCase()}
         />
@@ -55,7 +113,15 @@ const RiderRegistrationPage: React.FC = () => {
           htmlFor={label.replace(/\s+/g, '-').toLowerCase()}
           className="cursor-pointer flex flex-col items-center space-y-2"
         >
-          {file ? (
+          {preview ? (
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 overflow-hidden rounded-md mb-2">
+                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+              <p className="text-sm font-medium text-green-600">{file?.name}</p>
+              <p className="text-xs text-gray-500">Click to change</p>
+            </div>
+          ) : file ? (
             <>
               <Camera className="h-8 w-8 text-green-500" />
               <p className="text-sm font-medium text-green-600">{file.name}</p>
@@ -79,27 +145,76 @@ const RiderRegistrationPage: React.FC = () => {
     // Validate required fields
     if (!profilePhoto || !vehicleRegFront || !vehicleRegBack || 
         !licenseFront || !licenseBack || !idFront || !idBack) {
-      alert('Please upload all required documents');
+      toast({
+        variant: "destructive",
+        title: "Missing Documents",
+        description: "Please upload all required documents",
+      });
       return;
     }
     
     setIsSubmitting(true);
     
     try {
+      // First register the user account
+      let userId;
+      if (basicInfo) {
+        const registerSuccess = await register(name, email, phone, password, 'rider');
+        if (!registerSuccess) {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "Could not create rider account",
+          });
+          return;
+        }
+      }
+      
+      // Convert file objects to data URLs for the mock API
+      const profileImageUrl = profilePhotoPreview || '';
+      const idFrontUrl = idFrontPreview || '';
+      const idBackUrl = idBackPreview || '';
+      const licenseFrontUrl = licenseFrontPreview || '';
+      const licenseBackUrl = licenseBackPreview || '';
+      const vehicleRegFrontUrl = vehicleRegFrontPreview || '';
+      const vehicleRegBackUrl = vehicleRegBackPreview || '';
+      
+      // Then register the rider with all their documents
       const success = await registerRider({
         name,
         phone,
         bikeRegNumber,
         idNumber,
         licenseNumber,
-        profileImage: URL.createObjectURL(profilePhoto),
-        idImage: URL.createObjectURL(idFront),
-        licenseImage: URL.createObjectURL(licenseFront),
+        profileImage: profileImageUrl,
+        idImage: idFrontUrl,
+        licenseImage: licenseFrontUrl,
+        // These are new fields we're adding
+        idBackImage: idBackUrl,
+        licenseBackImage: licenseBackUrl,
+        vehicleRegFrontImage: vehicleRegFrontUrl,
+        vehicleRegBackImage: vehicleRegBackUrl
       });
       
       if (success) {
-        navigate('/login');
+        // Clear session storage
+        sessionStorage.removeItem('riderBasicInfo');
+        
+        toast({
+          title: "Registration Successful",
+          description: "Your rider account has been created. You can now accept deliveries.",
+        });
+        
+        // Navigate to rider dashboard
+        navigate('/rider-dashboard');
       }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        variant: "destructive",
+        title: "Registration Error",
+        description: "An error occurred during registration",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -130,6 +245,7 @@ const RiderRegistrationPage: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="boda-input"
+                    readOnly={!!basicInfo}
                   />
                 </div>
                 
@@ -142,6 +258,7 @@ const RiderRegistrationPage: React.FC = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     required
                     className="boda-input"
+                    readOnly={!!basicInfo}
                   />
                 </div>
               </div>
@@ -205,7 +322,8 @@ const RiderRegistrationPage: React.FC = () => {
                 <FileUploadField
                   label="Profile Photo *"
                   file={profilePhoto}
-                  onChange={(file) => handleFileChange(file, setProfilePhoto)}
+                  preview={profilePhotoPreview}
+                  onChange={setProfilePhoto}
                 />
               </div>
 
@@ -216,12 +334,14 @@ const RiderRegistrationPage: React.FC = () => {
                   <FileUploadField
                     label="Registration Front *"
                     file={vehicleRegFront}
-                    onChange={(file) => handleFileChange(file, setVehicleRegFront)}
+                    preview={vehicleRegFrontPreview}
+                    onChange={setVehicleRegFront}
                   />
                   <FileUploadField
                     label="Registration Back *"
                     file={vehicleRegBack}
-                    onChange={(file) => handleFileChange(file, setVehicleRegBack)}
+                    preview={vehicleRegBackPreview}
+                    onChange={setVehicleRegBack}
                   />
                 </div>
               </div>
@@ -233,12 +353,14 @@ const RiderRegistrationPage: React.FC = () => {
                   <FileUploadField
                     label="License Front *"
                     file={licenseFront}
-                    onChange={(file) => handleFileChange(file, setLicenseFront)}
+                    preview={licenseFrontPreview}
+                    onChange={setLicenseFront}
                   />
                   <FileUploadField
                     label="License Back *"
                     file={licenseBack}
-                    onChange={(file) => handleFileChange(file, setLicenseBack)}
+                    preview={licenseBackPreview}
+                    onChange={setLicenseBack}
                   />
                 </div>
               </div>
@@ -250,12 +372,14 @@ const RiderRegistrationPage: React.FC = () => {
                   <FileUploadField
                     label="ID Front *"
                     file={idFront}
-                    onChange={(file) => handleFileChange(file, setIdFront)}
+                    preview={idFrontPreview}
+                    onChange={setIdFront}
                   />
                   <FileUploadField
                     label="ID Back *"
                     file={idBack}
-                    onChange={(file) => handleFileChange(file, setIdBack)}
+                    preview={idBackPreview}
+                    onChange={setIdBack}
                   />
                 </div>
               </div>

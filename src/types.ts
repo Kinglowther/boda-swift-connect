@@ -27,7 +27,11 @@ export interface Rider {
   licenseNumber: string;
   profileImage: string;
   idImage: string;
+  idBackImage: string;
   licenseImage: string;
+  licenseBackImage: string;
+  vehicleRegFrontImage: string;
+  vehicleRegBackImage: string;
   status: 'available' | 'busy' | 'offline';
   location?: {
     lat: number;
