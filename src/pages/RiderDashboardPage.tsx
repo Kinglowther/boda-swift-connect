@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import OrderItem from '@/components/OrderItem';
 import { Order } from '@/types';
 import LocationMap from '@/components/LocationMap';
-import { MapPin, Navigation, Check, X, Phone, User, Settings, LogOut, Bike } from 'lucide-react';
+import { MapPin, Navigation, Check, X, Phone, User, Settings, LogOut, Bike, Clock, CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Switch } from '@/components/ui/switch';
@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 const RiderDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { orders } = useOrder();
+  const { orders, acceptOrder, declineOrder, updateOrderStatus } = useOrder();
   const { riders, updateRiderStatus } = useRider();
   const { toast } = useToast();
   
@@ -34,7 +34,6 @@ const RiderDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('available-orders');
-  const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   
   useEffect(() => {
@@ -51,7 +50,7 @@ const RiderDashboardPage: React.FC = () => {
     }
   }, [orders, user]);
   
-  // Request location permission when rider goes online
+  // Request location permission when rider goes online - always on for riders
   useEffect(() => {
     if (rider && rider.status === 'available') {
       requestLocationPermission();
@@ -61,24 +60,18 @@ const RiderDashboardPage: React.FC = () => {
   const requestLocationPermission = async () => {
     try {
       if ('geolocation' in navigator) {
-        toast({
-          title: "Location Access",
-          description: "Requesting access to your location for accurate order matching.",
-        });
-        
         navigator.geolocation.getCurrentPosition(
           position => {
             toast({
-              title: "Location Access Granted",
-              description: "Your location will be used to match you with nearby orders.",
+              title: "Location Tracking Active",
+              description: "Your location is being tracked for order assignments.",
             });
-            setLocationEnabled(true);
           },
           error => {
             toast({
               variant: "destructive",
-              title: "Location Access Denied",
-              description: "You need to enable location services to receive nearby orders.",
+              title: "Location Required",
+              description: "Location access is mandatory for riders. Please enable location services.",
             });
             
             if (rider) {
@@ -86,28 +79,15 @@ const RiderDashboardPage: React.FC = () => {
             }
           }
         );
-        
-        // Request notification permission
-        if ('Notification' in window) {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            toast({
-              title: "Notifications Enabled",
-              description: "You will receive notifications for new order requests.",
-            });
-            setNotificationsEnabled(true);
-          }
-        }
       }
     } catch (error) {
-      console.error("Error requesting permissions:", error);
+      console.error("Error requesting location permission:", error);
     }
   };
   
   // Handle rider status toggle
   const handleStatusToggle = (newStatus?: 'available' | 'offline') => {
     if (rider) {
-      // If newStatus is not provided, toggle between available and offline
       const status = newStatus || (rider.status === 'available' ? 'offline' : 'available');
         
       updateRiderStatus(rider.id, status);
@@ -124,26 +104,47 @@ const RiderDashboardPage: React.FC = () => {
     navigate('/');
   };
 
-  const handleLocationToggle = (enabled: boolean) => {
-    if (enabled) {
-      requestLocationPermission();
-    } else {
-      setLocationEnabled(false);
-    }
-  };
-
   const handleNotificationToggle = async (enabled: boolean) => {
     if (enabled) {
       if ('Notification' in window) {
         try {
           const permission = await Notification.requestPermission();
-          setNotificationsEnabled(permission === 'granted');
+          if (permission === 'granted') {
+            setNotificationsEnabled(true);
+            toast({
+              title: "Notifications Enabled",
+              description: "You will receive notifications for new order requests.",
+            });
+          } else {
+            setNotificationsEnabled(false);
+            toast({
+              variant: "destructive",
+              title: "Notification Permission Denied",
+              description: "Please enable notifications in your browser settings.",
+            });
+          }
         } catch (error) {
-          alert('Notification permission denied.');
+          console.error('Notification permission error:', error);
+          setNotificationsEnabled(false);
+          toast({
+            variant: "destructive",
+            title: "Notification Error",
+            description: "Failed to enable notifications.",
+          });
         }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Notifications Not Supported",
+          description: "Your browser doesn't support notifications.",
+        });
       }
     } else {
       setNotificationsEnabled(false);
+      toast({
+        title: "Notifications Disabled",
+        description: "You will no longer receive push notifications.",
+      });
     }
   };
   
@@ -155,16 +156,39 @@ const RiderDashboardPage: React.FC = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      toast({
-        title: "Order Accepted",
-        description: "You have been assigned to this delivery.",
-      });
+      // Accept the order and assign to current rider
+      const success = await acceptOrder(order.id, user?.id || '');
       
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification("New Delivery Assigned", {
-          body: `Pickup from: ${order.pickupLocation}`,
-          icon: "/favicon.ico"
+      if (success) {
+        // Remove from available orders
+        setAvailableOrders(prev => prev.filter(o => o.id !== order.id));
+        
+        // Add to my orders with updated rider assignment
+        const updatedOrder = {
+          ...order,
+          riderId: user?.id,
+          status: [
+            ...order.status,
+            { status: 'accepted' as const, timestamp: new Date().toISOString() }
+          ],
+          updatedAt: new Date().toISOString()
+        };
+        setMyOrders(prev => [...prev, updatedOrder]);
+        
+        toast({
+          title: "Order Accepted",
+          description: "You have been assigned to this delivery. Check 'My Orders' section.",
         });
+        
+        if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification("New Delivery Assigned", {
+            body: `Pickup from: ${order.pickupLocation}`,
+            icon: "/favicon.ico"
+          });
+        }
+        
+        // Switch to My Orders tab
+        setActiveTab('my-orders');
       }
       
       console.log('Order accepted:', order);
@@ -189,10 +213,17 @@ const RiderDashboardPage: React.FC = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast({
-        title: "Order Declined",
-        description: "The order will be assigned to another rider.",
-      });
+      const success = await declineOrder(order.id);
+      
+      if (success) {
+        // Remove from available orders for this rider
+        setAvailableOrders(prev => prev.filter(o => o.id !== order.id));
+        
+        toast({
+          title: "Order Declined",
+          description: "The order will be assigned to another rider.",
+        });
+      }
       
       console.log('Order declined:', order);
     } catch (error) {
@@ -205,6 +236,51 @@ const RiderDashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
       setProcessingOrderId(null);
+    }
+  };
+
+  // Handle order status updates (ongoing/completed)
+  const handleUpdateOrderStatus = async (orderId: string, status: 'in-progress' | 'completed') => {
+    setLoading(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const success = await updateOrderStatus(orderId, status);
+      
+      if (success) {
+        // Update local state
+        setMyOrders(prev => 
+          prev.map(order => 
+            order.id === orderId 
+              ? {
+                  ...order,
+                  status: [
+                    ...order.status,
+                    { status, timestamp: new Date().toISOString() }
+                  ],
+                  updatedAt: new Date().toISOString()
+                }
+              : order
+          )
+        );
+        
+        toast({
+          title: `Order ${status === 'in-progress' ? 'Started' : 'Completed'}`,
+          description: status === 'in-progress' 
+            ? "Order marked as in progress" 
+            : "Order completed successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update order",
+        description: "Please try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -273,7 +349,7 @@ const RiderDashboardPage: React.FC = () => {
                   }`}
                 >
                   <Bike className="inline-block h-4 w-4 mr-2" />
-                  My Orders
+                  My Orders ({myOrders.length})
                 </button>
                 
                 <button
@@ -331,7 +407,7 @@ const RiderDashboardPage: React.FC = () => {
                   <LocationMap riderLocation={rider.location} />
                   <p className="mt-3 text-sm text-center">
                     <MapPin className="inline-block h-4 w-4 mr-1" />
-                    Location tracking is active
+                    Location tracking is active (Required for riders)
                   </p>
                 </CardContent>
               </Card>
@@ -349,7 +425,7 @@ const RiderDashboardPage: React.FC = () => {
                               <div className="flex justify-between mb-2">
                                 <h3 className="font-semibold">Order #{order.id.slice(-6)}</h3>
                                 <Badge className="bg-boda-primary">
-                                  Ksh. {Math.floor(1000 + Math.random() * 500)}
+                                  Ksh. {order.price || 200}
                                 </Badge>
                               </div>
                               
@@ -439,14 +515,90 @@ const RiderDashboardPage: React.FC = () => {
               {activeTab === 'my-orders' && (
                 <div>
                   <h2 className="text-xl font-semibold mb-4">My Orders</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {myOrders.map(order => (
-                      <OrderItem
-                        key={order.id}
-                        order={order}
-                        onClick={(order) => navigate(`/order/${order.id}`)}
-                      />
-                    ))}
+                  <div className="space-y-4">
+                    {myOrders.map(order => {
+                      const currentStatus = order.status[order.status.length - 1].status;
+                      return (
+                        <Card key={order.id} className="overflow-hidden">
+                          <div className="p-4">
+                            <div className="flex justify-between mb-2">
+                              <h3 className="font-semibold">Order #{order.id.slice(-6)}</h3>
+                              <div className="flex items-center space-x-2">
+                                <Badge className="bg-boda-primary">
+                                  Ksh. {order.price || 200}
+                                </Badge>
+                                <Badge className={
+                                  currentStatus === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                  currentStatus === 'in-progress' ? 'bg-purple-100 text-purple-800' :
+                                  currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }>
+                                  {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm mb-1">
+                                  <span className="font-medium">From: </span>
+                                  {order.pickupLocation}
+                                </p>
+                                <p className="text-sm mb-1">
+                                  <span className="font-medium">To: </span>
+                                  {order.dropoffLocation}
+                                </p>
+                                <p className="text-sm mb-1">
+                                  <span className="font-medium">Items: </span>
+                                  {order.description}
+                                </p>
+                                {order.recipientName && (
+                                  <div className="mt-3 p-2 bg-boda-secondary rounded-lg">
+                                    <p className="text-sm font-medium mb-1">Recipient Details:</p>
+                                    <p className="text-sm">{order.recipientName}</p>
+                                    {order.recipientPhone && (
+                                      <div className="flex items-center mt-1">
+                                        <Phone className="h-4 w-4 text-boda-accent mr-1" />
+                                        <a href={`tel:${order.recipientPhone}`} className="text-sm text-boda-accent">
+                                          {order.recipientPhone}
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col md:justify-end space-y-2">
+                                {currentStatus === 'accepted' && (
+                                  <Button 
+                                    className="bg-purple-600 hover:bg-purple-700"
+                                    onClick={() => handleUpdateOrderStatus(order.id, 'in-progress')}
+                                    disabled={loading}
+                                  >
+                                    <Clock className="mr-2 h-4 w-4" />
+                                    Mark as Ongoing
+                                  </Button>
+                                )}
+                                {currentStatus === 'in-progress' && (
+                                  <Button 
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                                    disabled={loading}
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Mark as Completed
+                                  </Button>
+                                )}
+                                {currentStatus === 'completed' && (
+                                  <p className="text-green-600 text-sm font-medium">
+                                    ✓ Delivery Completed
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
                     {myOrders.length === 0 && (
                       <div className="col-span-2 p-8 text-center">
                         <p>You haven't accepted any orders yet.</p>
@@ -470,13 +622,13 @@ const RiderDashboardPage: React.FC = () => {
                             Location Access
                           </Label>
                           <p className="text-sm text-gray-600">
-                            Allow the app to access your location for accurate order matching and navigation
+                            Location tracking is always enabled for riders (Required for order assignments)
                           </p>
                         </div>
                         <Switch
                           id="location-access"
-                          checked={locationEnabled}
-                          onCheckedChange={handleLocationToggle}
+                          checked={true}
+                          disabled={true}
                         />
                       </div>
 

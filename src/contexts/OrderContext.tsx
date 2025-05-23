@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from 'react';
 import { Order, Shop } from '../types';
 import { useToast } from '@/components/ui/use-toast';
@@ -8,6 +7,9 @@ interface OrderContextType {
   activeOrder: Order | null;
   placeOrder: (order: Partial<Order>) => Promise<boolean>;
   cancelOrder: (orderId: string) => Promise<boolean>;
+  acceptOrder: (orderId: string, riderId: string) => Promise<boolean>;
+  declineOrder: (orderId: string) => Promise<boolean>;
+  updateOrderStatus: (orderId: string, status: 'in-progress' | 'completed') => Promise<boolean>;
   getOrdersByUserId: (userId: string) => Order[];
   shops: Shop[];
 }
@@ -70,6 +72,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     
+    // Calculate consistent price based on distance/complexity
+    const basePrice = 200;
+    const distanceMultiplier = Math.random() * 0.5 + 0.8; // 0.8 to 1.3
+    const finalPrice = Math.round(basePrice * distanceMultiplier);
+    
     const newOrder: Order = {
       id: `order-${Date.now()}`,
       customerId: orderData.customerId || '',
@@ -79,6 +86,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       recipientName: orderData.recipientName,
       recipientPhone: orderData.recipientPhone,
       shopId: orderData.shopId,
+      price: finalPrice,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: [{ status: 'pending', timestamp: new Date().toISOString() }],
@@ -132,6 +140,62 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return true;
   };
 
+  const acceptOrder = async (orderId: string, riderId: string): Promise<boolean> => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setOrders(prev => 
+      prev.map(order => 
+        order.id === orderId 
+          ? {
+              ...order,
+              riderId,
+              status: [
+                ...order.status,
+                { status: 'accepted', timestamp: new Date().toISOString() }
+              ],
+              updatedAt: new Date().toISOString()
+            }
+          : order
+      )
+    );
+    
+    return true;
+  };
+
+  const declineOrder = async (orderId: string): Promise<boolean> => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // In a real app, this would reassign to another rider
+    // For now, just keep it available for other riders
+    console.log(`Order ${orderId} declined, will be reassigned to another rider`);
+    
+    return true;
+  };
+
+  const updateOrderStatus = async (orderId: string, status: 'in-progress' | 'completed'): Promise<boolean> => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setOrders(prev => 
+      prev.map(order => 
+        order.id === orderId 
+          ? {
+              ...order,
+              status: [
+                ...order.status,
+                { status, timestamp: new Date().toISOString() }
+              ],
+              updatedAt: new Date().toISOString()
+            }
+          : order
+      )
+    );
+    
+    return true;
+  };
+
   const getOrdersByUserId = (userId: string): Order[] => {
     return orders.filter(order => order.customerId === userId || order.riderId === userId);
   };
@@ -142,7 +206,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orders, 
         activeOrder, 
         placeOrder, 
-        cancelOrder, 
+        cancelOrder,
+        acceptOrder,
+        declineOrder,
+        updateOrderStatus,
         getOrdersByUserId, 
         shops: mockShops
       }}
