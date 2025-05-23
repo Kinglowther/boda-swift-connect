@@ -55,7 +55,7 @@ const RiderRegistrationPage: React.FC = () => {
     }
   }, []);
   
-  const handleFileChange = (file: File | null, setter: (file: File | null) => void, previewSetter: (preview: string | null) => void) => {
+  const handleFileChange = (file: File | null, setter: React.Dispatch<React.SetStateAction<File | null>>, previewSetter: React.Dispatch<React.SetStateAction<string | null>>) => {
     setter(file);
     
     // Create and set preview URL
@@ -74,13 +74,15 @@ const RiderRegistrationPage: React.FC = () => {
     label, 
     file, 
     preview,
-    onChange, 
+    setFile,
+    setPreview,
     accept = "image/*" 
   }: { 
     label: string; 
     file: File | null;
     preview: string | null;
-    onChange: (file: File | null) => void;
+    setFile: React.Dispatch<React.SetStateAction<File | null>>;
+    setPreview: React.Dispatch<React.SetStateAction<string | null>>;
     accept?: string;
   }) => (
     <div className="space-y-2">
@@ -92,18 +94,7 @@ const RiderRegistrationPage: React.FC = () => {
           onChange={(e) => {
             const selectedFile = e.target.files?.[0] || null;
             if (selectedFile) {
-              handleFileChange(selectedFile, onChange, preview === null ? 
-                (() => {}) : // This is a placeholder function that does nothing
-                (previewUrl) => {
-                  // Here we determine which preview state to update based on the file type
-                  if (label.includes("Profile")) setProfilePhotoPreview(previewUrl);
-                  else if (label.includes("Registration Front")) setVehicleRegFrontPreview(previewUrl);
-                  else if (label.includes("Registration Back")) setVehicleRegBackPreview(previewUrl);
-                  else if (label.includes("License Front")) setLicenseFrontPreview(previewUrl);
-                  else if (label.includes("License Back")) setLicenseBackPreview(previewUrl);
-                  else if (label.includes("ID Front")) setIdFrontPreview(previewUrl);
-                  else if (label.includes("ID Back")) setIdBackPreview(previewUrl);
-              });
+              handleFileChange(selectedFile, setFile, setPreview);
             }
           }}
           className="hidden"
@@ -188,9 +179,8 @@ const RiderRegistrationPage: React.FC = () => {
         licenseNumber,
         profileImage: profileImageUrl,
         idImage: idFrontUrl,
-        licenseImage: licenseFrontUrl,
-        // These are new fields we're adding
         idBackImage: idBackUrl,
+        licenseImage: licenseFrontUrl,
         licenseBackImage: licenseBackUrl,
         vehicleRegFrontImage: vehicleRegFrontUrl,
         vehicleRegBackImage: vehicleRegBackUrl
@@ -323,7 +313,8 @@ const RiderRegistrationPage: React.FC = () => {
                   label="Profile Photo *"
                   file={profilePhoto}
                   preview={profilePhotoPreview}
-                  onChange={setProfilePhoto}
+                  setFile={setProfilePhoto}
+                  setPreview={setProfilePhotoPreview}
                 />
               </div>
 
@@ -335,13 +326,15 @@ const RiderRegistrationPage: React.FC = () => {
                     label="Registration Front *"
                     file={vehicleRegFront}
                     preview={vehicleRegFrontPreview}
-                    onChange={setVehicleRegFront}
+                    setFile={setVehicleRegFront}
+                    setPreview={setVehicleRegFrontPreview}
                   />
                   <FileUploadField
                     label="Registration Back *"
                     file={vehicleRegBack}
                     preview={vehicleRegBackPreview}
-                    onChange={setVehicleRegBack}
+                    setFile={setVehicleRegBack}
+                    setPreview={setVehicleRegBackPreview}
                   />
                 </div>
               </div>
@@ -354,13 +347,15 @@ const RiderRegistrationPage: React.FC = () => {
                     label="License Front *"
                     file={licenseFront}
                     preview={licenseFrontPreview}
-                    onChange={setLicenseFront}
+                    setFile={setLicenseFront}
+                    setPreview={setLicenseFrontPreview}
                   />
                   <FileUploadField
                     label="License Back *"
                     file={licenseBack}
                     preview={licenseBackPreview}
-                    onChange={setLicenseBack}
+                    setFile={setLicenseBack}
+                    setPreview={setLicenseBackPreview}
                   />
                 </div>
               </div>
@@ -373,13 +368,15 @@ const RiderRegistrationPage: React.FC = () => {
                     label="ID Front *"
                     file={idFront}
                     preview={idFrontPreview}
-                    onChange={setIdFront}
+                    setFile={setIdFront}
+                    setPreview={setIdFrontPreview}
                   />
                   <FileUploadField
                     label="ID Back *"
                     file={idBack}
                     preview={idBackPreview}
-                    onChange={setIdBack}
+                    setFile={setIdBack}
+                    setPreview={setIdBackPreview}
                   />
                 </div>
               </div>
