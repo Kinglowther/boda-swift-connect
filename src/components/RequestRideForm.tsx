@@ -193,10 +193,16 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     setLoading(true);
     
     try {
-      // Find nearest rider
-      const nearestRider = getNearestRider(-1.2864, 36.8172); // Use actual coordinates if available
-      
-      // Create the order object
+      // copilot fix: Use actual pickup coordinates if available for nearest rider search
+      let nearestRider = null;
+      if (pickupCoords && pickupCoords.lat && pickupCoords.lng) {
+        nearestRider = getNearestRider(pickupCoords.lat, pickupCoords.lng);
+      } else {
+        // fallback to Nairobi center if coords missing
+        nearestRider = getNearestRider(-1.2864, 36.8172);
+      }
+
+      // copilot fix: Include pickup/dropoff coordinates in orderData if available
       const orderData = {
         customerId: user.id,
         pickupLocation,
@@ -204,11 +210,16 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         description,
         recipientName,
         recipientPhone,
+        // copilot fix: add coordinates for backend/rider assignment if needed
+        pickupLat: pickupCoords?.lat,
+        pickupLng: pickupCoords?.lng,
+        dropoffLat: dropoffCoords?.lat,
+        dropoffLng: dropoffCoords?.lng,
       };
-      
+
       // Place the order
       const success = await placeOrder(orderData);
-      
+
       if (success) {
         toast({
           title: "Ride Requested!",
@@ -216,7 +227,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             ? `Finding a rider near ${pickupLocation}...` 
             : "Looking for available riders in your area...",
         });
-        
+
         // Try to show a browser notification
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification("Ride Requested", {
@@ -227,7 +238,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
           // Request permission for notifications
           Notification.requestPermission();
         }
-        
+
         onSuccess();
       }
     } catch (error) {
