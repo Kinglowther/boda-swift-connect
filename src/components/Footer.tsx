@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center">
           <div className="mb-4">
-            <h3 className="text-xl font-semibold mb-2 text-center">BodaConnect</h3>
+            <h3 className="text-xl font-semibold mb-2 text-center">Boda</h3>
             <p className="text-boda-200 text-sm text-center">
               Connecting customers to boda riders for quick deliveries and errands
             </p>
@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
           </div>
           
           <div className="text-sm text-boda-300">
-            &copy; {new Date().getFullYear()} BodaConnect. All rights reserved.
+            &copy; {new Date().getFullYear()} Boda. All rights reserved.
           </div>
         </div>
       </div>

@@ -33,9 +33,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <div className="h-10 w-10 bg-boda-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">BC</span>
+              <span className="text-white font-bold">B</span>
             </div>
-            <span className="text-xl font-bold text-boda-800">BodaConnect</span>
+            <span className="text-xl font-bold text-boda-800">Boda</span>
           </Link>
 
           {user ? (
