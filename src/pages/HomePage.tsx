@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Button } from '@/components/ui/button';
-import { Bike, Package, Shield, MapPin } from 'lucide-react';
+import { Bike, Package, Shield, MapPin, Search, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const HomePage: React.FC = () => {
@@ -30,6 +29,24 @@ const HomePage: React.FC = () => {
       icon: <Shield className="h-8 w-8 text-boda-600" />,
       title: "Verified Riders",
       description: "All our riders are verified with proper documentation for your safety."
+    }
+  ];
+
+  const steps = [
+    {
+      icon: <MapPin className="h-6 w-6 text-boda-800 dark:text-boda-400" />,
+      title: "Request a Ride",
+      description: "Submit your pickup and drop-off locations along with item details"
+    },
+    {
+      icon: <Search className="h-6 w-6 text-boda-800 dark:text-boda-400" />,
+      title: "Get Matched with a Rider",
+      description: "Our system finds the nearest available boda rider for your delivery"
+    },
+    {
+      icon: <Clock className="h-6 w-6 text-boda-800 dark:text-boda-400" />,
+      title: "Track in Real-time",
+      description: "Follow your delivery progress until it safely reaches its destination"
     }
   ];
 
@@ -76,31 +93,19 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-12 bg-boda-50 rounded-3xl my-8">
+      <section className="py-12 bg-boda-50 dark:bg-boda-900/20 rounded-3xl my-8">
         <div className="container px-4 md:px-6">
-          <h2 className="text-2xl font-bold text-center mb-12">How It Works</h2>
+          <h2 className="text-2xl font-bold text-center mb-12 text-foreground">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center text-center animate-fade-in">
-              <div className="w-12 h-12 bg-boda-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-boda-800 text-xl font-bold">1</span>
+            {steps.map((step, index) => (
+              <div key={index} className="flex flex-col items-center text-center animate-fade-in" style={{ animationDelay: `${index * 0.2}s` }}>
+                <div className="w-12 h-12 bg-boda-100 dark:bg-boda-800/50 rounded-full flex items-center justify-center mb-4">
+                  {step.icon}
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">{step.title}</h3>
+                <p className="text-muted-foreground">{step.description}</p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Request a Ride</h3>
-              <p className="text-gray-600">Submit your pickup and drop-off locations along with item details</p>
-            </div>
-            <div className="flex flex-col items-center text-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              <div className="w-12 h-12 bg-boda-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-boda-800 text-xl font-bold">2</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Get Matched with a Rider</h3>
-              <p className="text-gray-600">Our system finds the nearest available boda rider for your delivery</p>
-            </div>
-            <div className="flex flex-col items-center text-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
-              <div className="w-12 h-12 bg-boda-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-boda-800 text-xl font-bold">3</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Track in Real-time</h3>
-              <p className="text-gray-600">Follow your delivery progress until it safely reaches its destination</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
