@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ProfileImageUpload from '@/components/ProfileImageUpload';
 import { UserPlus, User, Bike } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -16,6 +17,7 @@ const RegisterPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [role, setRole] = useState<'customer' | 'rider'>('customer');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
@@ -46,7 +48,8 @@ const RegisterPage: React.FC = () => {
         name,
         email,
         phone,
-        password
+        password,
+        profileImage
       }));
       
       // Redirect to rider registration page
@@ -58,7 +61,7 @@ const RegisterPage: React.FC = () => {
     
     try {
       // Only register customers here, riders will be registered after document submission
-      const success = await register(name, email, phone, password, role);
+      const success = await register(name, email, phone, password, role, profileImage);
       if (success) {
         // For customers, give them Shujaa points
         toast({
@@ -106,6 +109,11 @@ const RegisterPage: React.FC = () => {
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
+            <ProfileImageUpload
+              currentImage={profileImage || undefined}
+              onImageChange={setProfileImage}
+            />
+            
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input

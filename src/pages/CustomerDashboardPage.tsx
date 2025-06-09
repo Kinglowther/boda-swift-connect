@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -7,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrder } from '@/contexts/OrderContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import OrderItem from '@/components/OrderItem';
 import { Bike, MapPin, User, Settings, LogOut, Star, Bell, MapPinIcon } from 'lucide-react';
 import RequestRideForm from '@/components/RequestRideForm';
@@ -95,9 +95,12 @@ const CustomerDashboardPage: React.FC = () => {
             {/* User Profile Section */}
             <div className="p-6 border-b border-border">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-boda-600 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-white" />
-                </div>
+                <Avatar className="w-12 h-12">
+                  <AvatarImage src={user.profileImage} alt={user.name} />
+                  <AvatarFallback className="bg-boda-600 text-white">
+                    {user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <h3 className="font-semibold text-foreground">{user.name}</h3>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -191,6 +194,7 @@ const CustomerDashboardPage: React.FC = () => {
                 </Button>
               </div>
 
+              {/* Conditionally render content based on showNewOrderForm */}
               {showNewOrderForm ? (
                 <RequestRideForm 
                   onCancel={handleCancelOrderForm} 
