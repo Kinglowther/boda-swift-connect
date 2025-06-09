@@ -91,31 +91,31 @@ const CustomerDashboardPage: React.FC = () => {
       {user ? (
         <div className="flex min-h-screen">
           {/* Sidebar */}
-          <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+          <div className="w-80 bg-card shadow-lg border-r border-border flex flex-col">
             {/* User Profile Section */}
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-border">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-12 h-12 bg-boda-600 rounded-full flex items-center justify-center">
                   <User className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <h3 className="font-semibold text-foreground">{user.name}</h3>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
               
               {/* Shujaa Points */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Star className="h-5 w-5 text-yellow-500" />
-                    <span className="font-medium text-yellow-800">Shujaa Points</span>
+                    <span className="font-medium text-yellow-800 dark:text-yellow-200">Shujaa Points</span>
                   </div>
                   <Badge className="bg-yellow-500 text-white">
                     {shujaaPoints}
                   </Badge>
                 </div>
-                <p className="text-xs text-yellow-700 mt-1">
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
                   Worth Ksh. {(shujaaPoints * 0.5).toFixed(2)}
                 </p>
               </div>
@@ -128,8 +128,8 @@ const CustomerDashboardPage: React.FC = () => {
                   onClick={() => setActiveTab('current-orders')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'current-orders' 
-                      ? 'bg-boda-100 text-boda-800 font-medium' 
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                      : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   <MapPin className="inline-block h-4 w-4 mr-2" />
@@ -140,8 +140,8 @@ const CustomerDashboardPage: React.FC = () => {
                   onClick={() => setActiveTab('past-orders')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'past-orders' 
-                      ? 'bg-boda-100 text-boda-800 font-medium' 
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                      : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   <Bike className="inline-block h-4 w-4 mr-2" />
@@ -152,8 +152,8 @@ const CustomerDashboardPage: React.FC = () => {
                   onClick={() => setActiveTab('settings')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'settings' 
-                      ? 'bg-boda-100 text-boda-800 font-medium' 
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                      : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   <Settings className="inline-block h-4 w-4 mr-2" />
@@ -163,11 +163,11 @@ const CustomerDashboardPage: React.FC = () => {
             </div>
 
             {/* Logout Button */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-border">
               <Button
                 onClick={handleLogout}
                 variant="outline"
-                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -180,8 +180,8 @@ const CustomerDashboardPage: React.FC = () => {
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
-                  <p className="text-gray-600">Manage your deliveries and requests</p>
+                  <h1 className="text-2xl font-bold text-foreground">Welcome, {user.name}</h1>
+                  <p className="text-muted-foreground">Manage your deliveries and requests</p>
                 </div>
                 <Button 
                   className="bg-green-500 hover:bg-green-600 text-white"
@@ -201,7 +201,7 @@ const CustomerDashboardPage: React.FC = () => {
                   {/* Current Orders */}
                   {activeTab === 'current-orders' && (
                     <div>
-                      <h2 className="text-xl font-semibold mb-4">Current Orders</h2>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Current Orders</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {userOrders.filter(order => 
                           !order.status.some(s => s.status === 'completed' || s.status === 'cancelled')
@@ -216,7 +216,7 @@ const CustomerDashboardPage: React.FC = () => {
                           !order.status.some(s => s.status === 'completed' || s.status === 'cancelled')
                         ).length === 0 && (
                           <div className="col-span-2 p-8 text-center">
-                            <p>You don't have any active orders.</p>
+                            <p className="text-muted-foreground">You don't have any active orders.</p>
                             <Button 
                               className="mt-4 bg-green-500 hover:bg-green-600"
                               onClick={() => setShowNewOrderForm(true)}
@@ -232,7 +232,7 @@ const CustomerDashboardPage: React.FC = () => {
                   {/* Past Orders */}
                   {activeTab === 'past-orders' && (
                     <div>
-                      <h2 className="text-xl font-semibold mb-4">Past Orders</h2>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Past Orders</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {userOrders.filter(order => 
                           order.status.some(s => s.status === 'completed' || s.status === 'cancelled')
@@ -247,7 +247,7 @@ const CustomerDashboardPage: React.FC = () => {
                           order.status.some(s => s.status === 'completed' || s.status === 'cancelled')
                         ).length === 0 && (
                           <div className="col-span-2 p-8 text-center">
-                            <p>You don't have any past orders.</p>
+                            <p className="text-muted-foreground">You don't have any past orders.</p>
                           </div>
                         )}
                       </div>
@@ -257,18 +257,18 @@ const CustomerDashboardPage: React.FC = () => {
                   {/* Settings */}
                   {activeTab === 'settings' && (
                     <div>
-                      <h2 className="text-xl font-semibold mb-4">Settings</h2>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Settings</h2>
                       <Card>
                         <CardHeader>
-                          <CardTitle>App Permissions</CardTitle>
+                          <CardTitle className="text-foreground">App Permissions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
-                              <Label htmlFor="location-access" className="text-base font-medium">
+                              <Label htmlFor="location-access" className="text-base font-medium text-foreground">
                                 Location Access
                               </Label>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 Allow the app to access your location for accurate pickup and delivery tracking
                               </p>
                             </div>
@@ -281,10 +281,10 @@ const CustomerDashboardPage: React.FC = () => {
 
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
-                              <Label htmlFor="push-notifications" className="text-base font-medium">
+                              <Label htmlFor="push-notifications" className="text-base font-medium text-foreground">
                                 Push Notifications
                               </Label>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 Receive notifications about order status updates and delivery confirmations
                               </p>
                             </div>
@@ -305,7 +305,7 @@ const CustomerDashboardPage: React.FC = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">You need to log in to view this page</h2>
+          <h2 className="text-xl font-semibold text-foreground">You need to log in to view this page</h2>
           <Button 
             className="mt-4 bg-green-500 hover:bg-green-600"
             onClick={() => navigate('/login')}
