@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -44,6 +45,12 @@ const CustomerDashboardPage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  // Handle tab change - hide request form when switching tabs
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setShowNewOrderForm(false); // Hide request form when switching tabs
   };
 
   const requestLocationPermission = async () => {
@@ -128,7 +135,7 @@ const CustomerDashboardPage: React.FC = () => {
             <div className="flex-1 p-4">
               <nav className="space-y-2">
                 <button
-                  onClick={() => setActiveTab('current-orders')}
+                  onClick={() => handleTabChange('current-orders')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'current-orders' 
                       ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
@@ -140,7 +147,7 @@ const CustomerDashboardPage: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab('past-orders')}
+                  onClick={() => handleTabChange('past-orders')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'past-orders' 
                       ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
@@ -152,7 +159,7 @@ const CustomerDashboardPage: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => handleTabChange('settings')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                     activeTab === 'settings' 
                       ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 

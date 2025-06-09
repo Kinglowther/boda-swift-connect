@@ -36,8 +36,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="h-10 w-10 bg-boda-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">B</span>
+            <div className="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden">
+              <img 
+                src="/lovable-uploads/7c5e8532-6f0b-4d1a-876c-4204440314e6.png" 
+                alt="Boda Logo" 
+                className="h-full w-full object-contain"
+              />
             </div>
             <span className="text-xl font-bold text-boda-800 dark:text-boda-400">Boda</span>
           </Link>
