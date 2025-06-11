@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useRider } from '@/contexts/RiderContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ProfileImageUpload from '@/components/ProfileImageUpload';
 import { Bike, Upload, Camera } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -22,8 +22,7 @@ const RiderRegistrationPage: React.FC = () => {
   const [bikeRegNumber, setBikeRegNumber] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [vehicleRegFront, setVehicleRegFront] = useState<File | null>(null);
   const [vehicleRegFrontPreview, setVehicleRegFrontPreview] = useState<string | null>(null);
   const [vehicleRegBack, setVehicleRegBack] = useState<File | null>(null);
@@ -139,7 +138,7 @@ const RiderRegistrationPage: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Missing Documents",
-        description: "Please upload all required documents",
+        description: "Please upload all required documents including your profile photo",
       });
       return;
     }
@@ -148,9 +147,8 @@ const RiderRegistrationPage: React.FC = () => {
     
     try {
       // First register the user account
-      let userId;
       if (basicInfo) {
-        const registerSuccess = await register(name, email, phone, password, 'rider');
+        const registerSuccess = await register(name, email, phone, password, 'rider', profilePhoto);
         if (!registerSuccess) {
           toast({
             variant: "destructive",
@@ -162,7 +160,6 @@ const RiderRegistrationPage: React.FC = () => {
       }
       
       // Convert file objects to data URLs for the mock API
-      const profileImageUrl = profilePhotoPreview || '';
       const idFrontUrl = idFrontPreview || '';
       const idBackUrl = idBackPreview || '';
       const licenseFrontUrl = licenseFrontPreview || '';
@@ -177,7 +174,7 @@ const RiderRegistrationPage: React.FC = () => {
         bikeRegNumber,
         idNumber,
         licenseNumber,
-        profileImage: profileImageUrl,
+        profileImage: profilePhoto,
         idImage: idFrontUrl,
         idBackImage: idBackUrl,
         licenseImage: licenseFrontUrl,
@@ -225,6 +222,16 @@ const RiderRegistrationPage: React.FC = () => {
             {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-boda-800">Personal Information</h3>
+              
+              {/* Profile Photo Upload */}
+              <div className="mb-6">
+                <ProfileImageUpload
+                  currentImage={profilePhoto || undefined}
+                  onImageChange={setProfilePhoto}
+                  className="max-w-md"
+                />
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name *</Label>
@@ -302,21 +309,10 @@ const RiderRegistrationPage: React.FC = () => {
 
             {/* Photo Uploads */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-boda-800">Photo Documentation *</h3>
+              <h3 className="text-lg font-semibold text-boda-800">Document Photos *</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Please upload clear, original copies of all required documents. Photos should be well-lit and all text should be clearly readable.
               </p>
-              
-              {/* Profile Photo */}
-              <div className="grid grid-cols-1 gap-4 mb-6">
-                <FileUploadField
-                  label="Profile Photo *"
-                  file={profilePhoto}
-                  preview={profilePhotoPreview}
-                  setFile={setProfilePhoto}
-                  setPreview={setProfilePhotoPreview}
-                />
-              </div>
 
               {/* Vehicle Registration */}
               <div className="space-y-4">
