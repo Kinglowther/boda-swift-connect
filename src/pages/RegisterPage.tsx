@@ -79,13 +79,13 @@ const RegisterPage: React.FC = () => {
     <Layout>
       <div className="max-w-lg mx-auto mt-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Create an Account</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-bold text-foreground">Create an Account</h1>
+          <p className="text-muted-foreground mt-2">
             Join Boda for fast and reliable delivery services
           </p>
         </div>
         
-        <div className="boda-card py-6">
+        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
           {/* Role Selection */}
           <div className="flex justify-center mb-6 gap-4">
             <Button
@@ -115,7 +115,7 @@ const RegisterPage: React.FC = () => {
             />
             
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-foreground">Full Name</Label>
               <Input
                 id="name"
                 placeholder="John Doe"
@@ -127,7 +127,7 @@ const RegisterPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -140,7 +140,7 @@ const RegisterPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
               <Input
                 id="phone"
                 placeholder="07XXXXXXXX"
@@ -152,7 +152,7 @@ const RegisterPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -165,7 +165,7 @@ const RegisterPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -194,7 +194,7 @@ const RegisterPage: React.FC = () => {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <a 
                 href="/login" 

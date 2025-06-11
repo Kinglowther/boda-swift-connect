@@ -276,7 +276,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="pickupLocation">Pickup Location</Label>
+                  <Label htmlFor="pickupLocation" className="text-foreground">Pickup Location</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -300,7 +300,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dropoffLocation">Dropoff Location</Label>
+                <Label htmlFor="dropoffLocation" className="text-foreground">Dropoff Location</Label>
                 <Input
                   id="dropoffLocation"
                   placeholder="e.g., Westlands, Apartment 4B"
@@ -312,7 +312,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Item Description</Label>
+                <Label htmlFor="description" className="text-foreground">Item Description</Label>
                 <Textarea
                   id="description"
                   placeholder="Describe the items to be delivered"
@@ -325,7 +325,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recipientName">Recipient Name</Label>
+                  <Label htmlFor="recipientName" className="text-foreground">Recipient Name</Label>
                   <Input
                     id="recipientName"
                     placeholder="Name of person receiving the delivery"
@@ -336,7 +336,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="recipientPhone">Recipient Phone</Label>
+                  <Label htmlFor="recipientPhone" className="text-foreground">Recipient Phone</Label>
                   <Input
                     id="recipientPhone"
                     placeholder="Recipient's contact number"
@@ -348,31 +348,31 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               </div>
               
               {distance !== null && price !== null && (
-                <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium text-green-800">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
                       Estimated Distance: 
                     </p>
-                    <span>{distance} km</span>
+                    <span className="text-foreground">{distance} km</span>
                   </div>
                   <div className="flex justify-between items-center mt-1">
-                    <p className="text-sm font-medium text-green-800">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
                       Estimated Price: 
                     </p>
-                    <span>Ksh. {price + discount}</span>
+                    <span className="text-foreground">Ksh. {price + discount}</span>
                   </div>
-                  <div className="flex justify-between items-center mt-1 text-green-600">
+                  <div className="flex justify-between items-center mt-1 text-green-600 dark:text-green-400">
                     <p className="text-sm font-medium">
                       Shujaa Discount:
                     </p>
                     <span>- Ksh. {discount}</span>
                   </div>
-                  <hr className="my-2 border-green-200" />
+                  <hr className="my-2 border-green-200 dark:border-green-700" />
                   <div className="flex justify-between items-center font-bold">
-                    <p className="text-green-800">
+                    <p className="text-green-800 dark:text-green-300">
                       Final Price:
                     </p>
-                    <span className="text-lg">Ksh. {price}</span>
+                    <span className="text-lg text-foreground">Ksh. {price}</span>
                   </div>
                 </div>
               )}
@@ -405,53 +405,53 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 />
                 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700">Pickup:</p>
-                    <p className="text-sm">{pickupLocation}</p>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium text-foreground">Pickup:</p>
+                    <p className="text-sm text-muted-foreground">{pickupLocation}</p>
                   </div>
                   
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700">Dropoff:</p>
-                    <p className="text-sm">{dropoffLocation}</p>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium text-foreground">Dropoff:</p>
+                    <p className="text-sm text-muted-foreground">{dropoffLocation}</p>
                   </div>
                 </div>
                 
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700">Items:</p>
-                  <p className="text-sm">{description}</p>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium text-foreground">Items:</p>
+                  <p className="text-sm text-muted-foreground">{description}</p>
                 </div>
                 
                 {(recipientName || recipientPhone) && (
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700">Recipient:</p>
-                    {recipientName && <p className="text-sm">{recipientName}</p>}
-                    {recipientPhone && <p className="text-sm">{recipientPhone}</p>}
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium text-foreground">Recipient:</p>
+                    {recipientName && <p className="text-sm text-muted-foreground">{recipientName}</p>}
+                    {recipientPhone && <p className="text-sm text-muted-foreground">{recipientPhone}</p>}
                   </div>
                 )}
                 
-                <Card className="border-green-200 bg-green-50">
+                <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium text-green-800">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
                         Base Fare: 
                       </p>
-                      <span>Ksh. 100</span>
+                      <span className="text-foreground">Ksh. 100</span>
                     </div>
                     <div className="flex justify-between items-center mt-1">
-                      <p className="text-sm font-medium text-green-800">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
                         Distance Cost ({distance} km): 
                       </p>
-                      <span>Ksh. {Math.round((price || 0) - 100)}</span>
+                      <span className="text-foreground">Ksh. {Math.round((price || 0) - 100)}</span>
                     </div>
-                    <div className="flex justify-between items-center mt-1 text-green-600">
+                    <div className="flex justify-between items-center mt-1 text-green-600 dark:text-green-400">
                       <p className="text-sm font-medium">
                         Shujaa Discount:
                       </p>
                       <span>- Ksh. {discount}</span>
                     </div>
-                    <hr className="my-2 border-green-200" />
+                    <hr className="my-2 border-green-200 dark:border-green-700" />
                     <div className="flex justify-between items-center font-bold">
-                      <p className="text-green-800">
+                      <p className="text-green-800 dark:text-green-300">
                         Final Price:
                       </p>
                       <Badge className="bg-green-500 text-white text-lg py-1">

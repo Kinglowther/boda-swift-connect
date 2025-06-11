@@ -40,16 +40,16 @@ const LoginPage: React.FC = () => {
     <Layout>
       <div className="max-w-md mx-auto mt-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Login to BodaDispatch</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-bold text-foreground">Login to BodaDispatch</h1>
+          <p className="text-muted-foreground mt-2">
             Enter your credentials to access your account
           </p>
         </div>
         
-        <div className="boda-card py-6">
+        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email" className="text-foreground">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -63,7 +63,7 @@ const LoginPage: React.FC = () => {
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-foreground">Password</Label>
                 <a href="#" className="text-sm text-boda-600 hover:underline">
                   Forgot password?
                 </a>
@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <a 
                 href="/register" 
