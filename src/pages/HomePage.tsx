@@ -112,18 +112,18 @@ const HomePage: React.FC = () => {
 
       <section className="py-12">
         <div className="container px-4 md:px-6">
-          <h2 className="text-2xl font-bold text-center mb-8">Our Features</h2>
+          <h2 className="text-2xl font-bold text-center mb-8 text-foreground">Our Features</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <div 
                 key={index} 
-                className="boda-card hover:scale-105 transition-transform"
+                className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all p-4 hover:scale-105"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">{feature.icon}</div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
                 </div>
               </div>
             ))}

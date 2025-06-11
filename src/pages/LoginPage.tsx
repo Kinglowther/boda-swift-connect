@@ -110,15 +110,6 @@ const LoginPage: React.FC = () => {
               </a>
             </p>
           </div>
-          
-          <div className="mt-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-sm text-center">
-              <b>Demo Accounts:</b><br />
-              Customer: customer@example.com<br />
-              Rider: rider@example.com<br />
-              <span className="text-gray-500">Password: 123456</span>
-            </p>
-          </div>
         </div>
       </div>
     </Layout>
