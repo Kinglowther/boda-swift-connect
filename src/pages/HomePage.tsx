@@ -72,12 +72,21 @@ const HomePage: React.FC = () => {
                   Go to Dashboard
                 </Button>
               ) : (
-                <Button 
-                  className="boda-btn text-lg px-8" 
-                  onClick={() => navigate('/register')}
-                >
-                  Get Started
-                </Button>
+                <>
+                  <Button 
+                    className="boda-btn text-lg px-8" 
+                    onClick={() => navigate('/register')}
+                  >
+                    Get Started
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="text-lg border-boda-600 text-boda-600 hover:bg-boda-50" 
+                    onClick={() => navigate('/rider-registration')}
+                  >
+                    Become a Rider
+                  </Button>
+                </>
               )}
             </div>
           </div>
