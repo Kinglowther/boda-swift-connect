@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -26,6 +25,7 @@ interface LocationMapProps {
   pickupLocations?: Location[];
   dropoffLocation?: Location | null;
   riderLocation?: Location | null;
+  routePolyline?: L.LatLngExpression[];
   isSimulation?: boolean; // isSimulation is no longer used but kept for prop compatibility
 }
 
@@ -75,7 +75,8 @@ const LocationMap: React.FC<LocationMapProps> = ({
   pickupLocation, 
   pickupLocations,
   dropoffLocation, 
-  riderLocation
+  riderLocation,
+  routePolyline,
 }) => {
   const allPoints: L.LatLng[] = [];
   if (pickupLocation) allPoints.push(L.latLng(pickupLocation.lat, pickupLocation.lng));
@@ -122,7 +123,9 @@ const LocationMap: React.FC<LocationMapProps> = ({
           </Marker>
         )}
         
-        {pickupLocation && dropoffLocation && (
+        {routePolyline && routePolyline.length > 0 ? (
+          <Polyline positions={routePolyline} color="blue" weight={5} opacity={0.7} />
+        ) : pickupLocation && dropoffLocation && (
           <Polyline 
             positions={[[pickupLocation.lat, pickupLocation.lng], [dropoffLocation.lat, dropoffLocation.lng]]} 
             color="grey" 

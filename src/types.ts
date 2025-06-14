@@ -58,4 +58,8 @@ export interface Order {
   updatedAt: string;
   status: OrderStatus[];
   shopId?: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffLat?: number;
+  dropoffLng?: number;
 }

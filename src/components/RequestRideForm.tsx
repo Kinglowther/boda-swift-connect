@@ -10,9 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, Package } from 'lucide-react';
+import { MapPin, Navigation, Package, Clock } from 'lucide-react';
 import LocationMap from './LocationMap';
 import LoadingSpinner from './LoadingSpinner';
+import { getRouteDetails } from '@/services/distanceService';
 
 interface RequestRideFormProps {
   onCancel: () => void;
@@ -35,29 +36,46 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   const [price, setPrice] = useState<number | null>(null);
   const [discount, setDiscount] = useState(200); // Shujaa discount in KSH
   const [distance, setDistance] = useState<number | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirm'>('details');
   
   // Location coordinates
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [routePolyline, setRoutePolyline] = useState<L.LatLngExpression[] | undefined>(undefined);
   
-  // Calculate distance and price when locations change
-  const calculateDistance = useCallback((pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
-    // Use Leaflet's distanceTo for more accurate great-circle distance
-    const pickupLatLng = L.latLng(pickup.lat, pickup.lng);
-    const dropoffLatLng = L.latLng(dropoff.lat, dropoff.lng);
-    const distanceInMeters = pickupLatLng.distanceTo(dropoffLatLng);
-    const calculatedDistance = distanceInMeters / 1000; // convert to km
-    
-    setDistance(parseFloat(calculatedDistance.toFixed(1)));
-    
-    // Calculate price: Base fare + per km rate
-    const baseFare = 100; // KSH
-    const perKmRate = 50; // KSH per km
-    const calculatedPrice = baseFare + (calculatedDistance * perKmRate);
-    setPrice(Math.ceil(calculatedPrice));
-  }, [setDistance, setPrice]);
+  // Calculate distance, price and duration when locations change
+  useEffect(() => {
+    const calculateRoute = async () => {
+      if (pickupCoords && dropoffCoords) {
+        setLoading(true);
+        try {
+          const routeDetails = await getRouteDetails([pickupCoords, dropoffCoords]);
+          
+          setDistance(routeDetails.distance);
+          setDuration(routeDetails.duration);
+          setRoutePolyline(routeDetails.polyline);
+          
+          // Calculate price: Base fare + per km rate
+          const baseFare = 100; // KSH
+          const perKmRate = 50; // KSH per km
+          const calculatedPrice = baseFare + (routeDetails.distance * perKmRate);
+          setPrice(Math.ceil(calculatedPrice));
+        } catch (error) {
+          console.error("Error calculating route:", error);
+          toast({
+            variant: "destructive",
+            title: "Could not calculate route",
+            description: "Please check your locations and try again.",
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    calculateRoute();
+  }, [pickupCoords, dropoffCoords, toast]);
 
   // Get current location
   useEffect(() => {
@@ -72,10 +90,6 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             setPickupCoords(currentPickupCoords);
             setPickupLocation('Your Current Location');
             setLoading(false);
-            
-            if (dropoffCoords) {
-              calculateDistance(currentPickupCoords, dropoffCoords);
-            }
           },
           error => {
             toast({
@@ -98,7 +112,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         setLoading(false);
       }
     }
-  }, [useCurrentLocation, toast, dropoffCoords, calculateDistance]); // Added dropoffCoords and calculateDistance
+  }, [useCurrentLocation, toast]); // Added dropoffCoords and calculateDistance
   
   // Simulate geocoding for demo purposes
   const simulateGeocoding = useCallback((address: string, isPickup: boolean) => {
@@ -116,19 +130,13 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
       
       if (isPickup) {
         setPickupCoords(coords);
-        if (dropoffCoords) {
-          calculateDistance(coords, dropoffCoords);
-        }
       } else {
         setDropoffCoords(coords);
-        if (pickupCoords) {
-          calculateDistance(pickupCoords, coords);
-        }
       }
       
       setLoading(false);
     }, 1000);
-  }, [pickupCoords, dropoffCoords, calculateDistance, setLoading, setPickupCoords, setDropoffCoords]);
+  }, [setLoading, setPickupCoords, setDropoffCoords]);
   
   const handlePickupLocationChange = useCallback((location: string) => {
     setPickupLocation(location);
@@ -195,9 +203,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     try {
       let nearestRider = null;
       if (pickupCoords && pickupCoords.lat && pickupCoords.lng) {
-        nearestRider = getNearestRider(pickupCoords.lat, pickupCoords.lng);
+        nearestRider = await getNearestRider(pickupCoords.lat, pickupCoords.lng);
       } else {
-        nearestRider = getNearestRider(-1.2864, 36.8172); // Nairobi center fallback
+        nearestRider = await getNearestRider(-1.2864, 36.8172); // Nairobi center fallback
       }
 
       const orderData = {
@@ -287,6 +295,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               <LocationMap 
                 pickupLocation={pickupCoords}
                 dropoffLocation={dropoffCoords}
+                routePolyline={routePolyline}
                 isSimulation={false}
               />
 
@@ -371,6 +380,17 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     </p>
                     <span className="text-foreground">{distance} km</span>
                   </div>
+                  {duration !== null && duration > 0 && (
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                        Est. Travel Time:
+                      </p>
+                      <span className="text-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3"/>
+                        {Math.round(duration)} mins
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-sm font-medium text-green-800 dark:text-green-300">
                       Estimated Price (before discount): 
@@ -417,6 +437,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 <LocationMap 
                   pickupLocation={pickupCoords}
                   dropoffLocation={dropoffCoords}
+                  routePolyline={routePolyline}
                   isSimulation={true} // Keep simulation true to show route line
                 />
                 

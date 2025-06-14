@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import OrderItem from '@/components/OrderItem';
 import { Order, Rider } from '@/types';
 import LocationMap from '../LocationMap';
+import OrderDistanceInfo from './OrderDistanceInfo';
 
 interface AvailableOrdersTabProps {
   isOnline: boolean;
@@ -24,12 +25,10 @@ const AvailableOrdersTab: React.FC<AvailableOrdersTabProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Mock coordinates for all available orders' pickup locations
-  const availableOrderPickupLocations = availableOrders.map(() => ({
-    // Distribute mock coordinates around a central point to simulate different locations
-    lat: -1.286389 + (Math.random() - 0.5) * 0.05,
-    lng: 36.817223 + (Math.random() - 0.5) * 0.05,
-  }));
+  const availableOrderPickupLocations = availableOrders
+    .map(o => (o.pickupLat && o.pickupLng ? { lat: o.pickupLat, lng: o.pickupLng } : null))
+    .filter((loc): loc is { lat: number; lng: number } => loc !== null);
+
 
   return (
     <div>
@@ -56,10 +55,13 @@ const AvailableOrdersTab: React.FC<AvailableOrdersTabProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {availableOrders.map(order => (
           <div key={order.id} className="relative">
-            <OrderItem
+             <OrderItem
               order={order}
               onClick={(o) => navigate(`/order/${o.id}`)}
             />
+            <div className="px-6 pb-4 -mt-2">
+              <OrderDistanceInfo riderLocation={riderLocation} order={order} />
+            </div>
             {isOnline && (
               <Button
                 className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 text-white"

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import L from 'leaflet';
 import { Rider } from '../types';
 import { useToast } from '@/components/ui/use-toast';
+import { getRouteDetails } from '@/services/distanceService';
 
 interface RiderContextType {
   riders: Rider[];
@@ -9,7 +10,7 @@ interface RiderContextType {
   registerRider: (riderData: Partial<Rider>) => Promise<boolean>;
   updateRiderStatus: (riderId: string, status: Rider['status']) => void;
   updateRiderLocation: (riderId: string, lat: number, lng: number) => void;
-  getNearestRider: (lat: number, lng: number) => Rider | null;
+  getNearestRider: (lat: number, lng: number) => Promise<Rider | null>;
 }
 
 const RiderContext = createContext<RiderContextType | undefined>(undefined);
@@ -148,28 +149,40 @@ export const RiderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  const getNearestRider = (lat: number, lng: number): Rider | null => {
+  const getNearestRider = async (lat: number, lng: number): Promise<Rider | null> => {
     if (activeRiders.length === 0) {
       return null;
     }
+
+    const availableRiders = activeRiders.filter(rider => rider.location);
+    if (availableRiders.length === 0) return null;
+
+    const riderDistances = await Promise.all(
+      availableRiders.map(async (rider) => {
+        try {
+          const route = await getRouteDetails([
+            { lat: rider.location!.lat, lng: rider.location!.lng },
+            { lat, lng }
+          ], 'cycling-road');
+          return { rider, distance: route.distance };
+        } catch (error) {
+          console.error(`Could not calculate distance for rider ${rider.id}`, error);
+          const orderLocation = L.latLng(lat, lng);
+          const riderLocation = L.latLng(rider.location!.lat, rider.location!.lng);
+          const distance = orderLocation.distanceTo(riderLocation) / 1000; // in km
+          return { rider, distance };
+        }
+      })
+    );
     
-    const orderLocation = L.latLng(lat, lng);
-    
-    const ridersWithDistance = activeRiders
-      .filter(rider => rider.location) // Only riders with location
-      .map(rider => {
-        const riderLocation = L.latLng(rider.location!.lat, rider.location!.lng);
-        const distance = orderLocation.distanceTo(riderLocation); // Distance in meters
-        return { rider, distance };
-      });
-    
-    if (ridersWithDistance.length === 0) {
+    const validRiders = riderDistances.filter(rd => rd.distance !== Infinity);
+
+    if (validRiders.length === 0) {
       return null;
     }
     
-    // Sort by distance and get the nearest
-    ridersWithDistance.sort((a, b) => a.distance - b.distance);
-    return ridersWithDistance[0].rider;
+    validRiders.sort((a, b) => a.distance - b.distance);
+    return validRiders[0].rider;
   };
 
   return (

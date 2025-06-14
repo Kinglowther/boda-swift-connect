@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import L from 'leaflet';
 import OrderItem from '@/components/OrderItem';
 import { Order, Rider } from '@/types';
 import LocationMap from '@/components/LocationMap';
+import { getRouteDetails } from '@/services/distanceService';
 
 interface MyOrdersTabProps {
   riderOrders: Order[];
@@ -12,16 +14,36 @@ interface MyOrdersTabProps {
 
 const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ riderOrders, riderLocation }) => {
   const navigate = useNavigate();
+  const [activeRoute, setActiveRoute] = useState<{ polyline?: L.LatLngExpression[] } | null>(null);
 
   // Find an order that is currently active for map display
   const activeOrder = riderOrders.find(o => {
     const currentStatus = o.status[o.status.length - 1]?.status;
     return currentStatus === 'accepted' || currentStatus === 'in-progress';
   });
+  
+  const pickupCoords = activeOrder && activeOrder.pickupLat && activeOrder.pickupLng 
+    ? { lat: activeOrder.pickupLat, lng: activeOrder.pickupLng } 
+    : null;
+  const dropoffCoords = activeOrder && activeOrder.dropoffLat && activeOrder.dropoffLng 
+    ? { lat: activeOrder.dropoffLat, lng: activeOrder.dropoffLng }
+    : null;
 
-  // Mock coordinates since order data doesn't have them yet.
-  const pickupCoords = activeOrder ? { lat: -1.286389, lng: 36.817223 } : null; // Nairobi CBD
-  const dropoffCoords = activeOrder ? { lat: -1.2995, lng: 36.7819 } : null; // Kilimani area
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (pickupCoords && dropoffCoords) {
+        const route = await getRouteDetails([pickupCoords, dropoffCoords]);
+        setActiveRoute(route);
+      }
+    };
+
+    if(activeOrder) {
+      fetchRoute();
+    } else {
+      setActiveRoute(null);
+    }
+  }, [activeOrder, pickupCoords, dropoffCoords]);
+
 
   return (
     <div>
@@ -32,6 +54,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ riderOrders, riderLocation })
           riderLocation={riderLocation}
           pickupLocation={pickupCoords}
           dropoffLocation={dropoffCoords}
+          routePolyline={activeRoute?.polyline}
           isSimulation={false}
         />
       </div>
