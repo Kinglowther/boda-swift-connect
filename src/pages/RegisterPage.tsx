@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProfileImageUpload from '@/components/ProfileImageUpload';
 import { UserPlus, User, Bike } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast'; // Corrected import path
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -61,7 +61,7 @@ const RegisterPage: React.FC = () => {
     
     try {
       // Only register customers here, riders will be registered after document submission
-      const success = await register(name, email, phone, password, role, profileImage);
+      const success = await register({ name, email, phone, password, role, profileImage });
       if (success) {
         // For customers, give them Shujaa points
         toast({
