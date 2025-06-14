@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -8,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProfileImageUpload from '@/components/ProfileImageUpload';
 import { UserPlus, User, Bike } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast'; 
+import { useToast } from '@/components/ui/use-toast';
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -30,6 +31,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Form validation
     if (password !== confirmPassword) {
       toast({
         variant: "destructive",
@@ -39,7 +41,9 @@ const RegisterPage: React.FC = () => {
       return;
     }
     
+    // For rider role, redirect to the rider registration page
     if (role === 'rider') {
+      // Store basic info in session storage temporarily
       sessionStorage.setItem('riderBasicInfo', JSON.stringify({
         name,
         email,
@@ -47,6 +51,8 @@ const RegisterPage: React.FC = () => {
         password,
         profileImage
       }));
+      
+      // Redirect to rider registration page
       navigate('/rider-registration');
       return;
     }
@@ -54,12 +60,15 @@ const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const success = await register({ name, email, phone, password, role, profileImage });
-      if (success && role === 'customer') {
+      // Only register customers here, riders will be registered after document submission
+      const success = await register(name, email, phone, password, role, profileImage);
+      if (success) {
+        // For customers, give them Shujaa points
         toast({
           title: "Congratulations!",
           description: "You've earned 100 Shujaa points for signing up!",
         });
+        navigate('/customer-dashboard');
       }
     } finally {
       setIsSubmitting(false);
@@ -77,6 +86,7 @@ const RegisterPage: React.FC = () => {
         </div>
         
         <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+          {/* Role Selection */}
           <div className="flex justify-center mb-6 gap-4">
             <Button
               type="button"

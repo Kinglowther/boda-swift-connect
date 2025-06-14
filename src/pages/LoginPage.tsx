@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -13,7 +14,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate(); // Keep navigate for link clicks if any, but not for post-login redirection
+  const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +26,11 @@ const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // The login function in AuthContext now handles redirection.
-      // No need to navigate explicitly here after login.
-      await login(email, password);
-      // If login is successful, AuthContext will navigate.
-      // If login fails, AuthContext will show a toast.
+      const success = await login(email, password);
+      if (success) {
+        // Redirect based on user role in AuthContext
+        navigate('/');
+      } 
     } finally {
       setIsSubmitting(false);
     }

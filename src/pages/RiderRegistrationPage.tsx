@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -9,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProfileImageUpload from '@/components/ProfileImageUpload';
 import { Bike, Upload, Camera } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const RiderRegistrationPage: React.FC = () => {
   // Get basic info from session storage if available
@@ -51,7 +52,6 @@ const RiderRegistrationPage: React.FC = () => {
       setEmail(parsedInfo.email || '');
       setPhone(parsedInfo.phone || '');
       setPassword(parsedInfo.password || '');
-      setProfilePhoto(parsedInfo.profileImage || null);
     }
   }, []);
   
@@ -148,28 +148,16 @@ const RiderRegistrationPage: React.FC = () => {
     
     try {
       // First register the user account
-      // The `basicInfo` check might be redundant if we always have name, email, phone, password
-      // but it's kept for safety from previous logic.
-      const registerSuccess = await register({
-        name,
-        email,
-        phone,
-        password,
-        role: 'rider',
-        profileImage: profilePhoto
-      });
-
-      if (!registerSuccess) {
-        // Toast for registration failure is handled by AuthContext now.
-        // If specific message needed here, it can be added.
-        // Example:
-        // toast({
-        //   variant: "destructive",
-        //   title: "Account Creation Failed",
-        //   description: "Could not create the basic rider account. Please try again.",
-        // });
-        setIsSubmitting(false);
-        return;
+      if (basicInfo) {
+        const registerSuccess = await register(name, email, phone, password, 'rider', profilePhoto);
+        if (!registerSuccess) {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "Could not create rider account",
+          });
+          return;
+        }
       }
       
       // Convert file objects to data URLs for the mock API
@@ -181,7 +169,7 @@ const RiderRegistrationPage: React.FC = () => {
       const vehicleRegBackUrl = vehicleRegBackPreview || '';
       
       // Then register the rider with all their documents
-      const riderDetailsSuccess = await registerRider({
+      const success = await registerRider({
         name,
         phone,
         bikeRegNumber,
@@ -196,7 +184,7 @@ const RiderRegistrationPage: React.FC = () => {
         vehicleRegBackImage: vehicleRegBackUrl
       });
       
-      if (riderDetailsSuccess) {
+      if (success) {
         // Clear session storage
         sessionStorage.removeItem('riderBasicInfo');
         
@@ -207,18 +195,14 @@ const RiderRegistrationPage: React.FC = () => {
         
         // Navigate to rider dashboard
         navigate('/rider-dashboard');
-      } else {
-         // Toast for rider details registration failure is handled by RiderContext.
-         // If specific message needed here, it can be added.
       }
     } catch (error) {
       console.error('Registration error:', error);
-      // Generic error toast, specific errors handled by contexts.
-      // toast({
-      //   variant: "destructive",
-      //   title: "Registration Error",
-      //   description: "An unexpected error occurred during registration. Please try again.",
-      // });
+      toast({
+        variant: "destructive",
+        title: "Registration Error",
+        description: "An error occurred during registration",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -259,7 +243,7 @@ const RiderRegistrationPage: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="bg-background border-border text-foreground"
-                    readOnly={!!basicInfo && !!basicInfo.name}
+                    readOnly={!!basicInfo}
                   />
                 </div>
                 
@@ -272,7 +256,7 @@ const RiderRegistrationPage: React.FC = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     required
                     className="bg-background border-border text-foreground"
-                    readOnly={!!basicInfo && !!basicInfo.phone}
+                    readOnly={!!basicInfo}
                   />
                 </div>
               </div>
