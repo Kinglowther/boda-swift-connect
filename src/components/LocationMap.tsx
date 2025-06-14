@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -87,47 +86,49 @@ const RecenterAutomatically: React.FC<{ bounds: L.LatLngBounds | null }> = ({ bo
 const RouteInfoOverlay: React.FC<{ 
   duration: number; 
   pickupLocation: Location; 
-  map: L.Map 
-}> = ({ duration, pickupLocation, map }) => {
+}> = ({ duration, pickupLocation }) => {
+  const map = useMap();
+  
   useEffect(() => {
     if (!map || !pickupLocation) return;
 
     // Create custom control for route info
-    const routeInfoControl = L.control({ position: 'topright' });
-    
-    routeInfoControl.onAdd = () => {
-      const div = L.DomUtil.create('div', 'route-info-control');
-      div.innerHTML = `
-        <div style="
-          background: #3b82f6;
-          color: white;
-          padding: 8px 12px;
-          border-radius: 20px;
-          font-weight: bold;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 14px;
-        ">
-          <span style="
-            background: #10b981;
+    const RouteInfoControl = L.Control.extend({
+      onAdd: function() {
+        const div = L.DomUtil.create('div', 'route-info-control');
+        div.innerHTML = `
+          <div style="
+            background: #3b82f6;
             color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-          ">${Math.round(duration)}</span>
-          <span>min</span>
-        </div>
-      `;
-      return div;
-    };
+            gap: 4px;
+            font-size: 14px;
+          ">
+            <span style="
+              background: #10b981;
+              color: white;
+              border-radius: 50%;
+              width: 24px;
+              height: 24px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 16px;
+              font-weight: bold;
+            ">${Math.round(duration)}</span>
+            <span>min</span>
+          </div>
+        `;
+        return div;
+      }
+    });
 
+    const routeInfoControl = new RouteInfoControl({ position: 'topright' });
     routeInfoControl.addTo(map);
 
     return () => {
@@ -260,7 +261,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         
         {/* Add route info overlay if requested */}
         {showRouteInfo && duration && pickupLocation && (
-          <RouteInfoOverlay duration={duration} pickupLocation={pickupLocation} map={null as any} />
+          <RouteInfoOverlay duration={duration} pickupLocation={pickupLocation} />
         )}
       </MapContainer>
     </div>
