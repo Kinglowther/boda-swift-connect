@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -14,7 +13,6 @@ import RiderSidebar from '@/components/rider-dashboard/RiderSidebar';
 import AvailableOrdersTab from '@/components/rider-dashboard/AvailableOrdersTab';
 import MyOrdersTab from '@/components/rider-dashboard/MyOrdersTab';
 import SettingsTab from '@/components/rider-dashboard/SettingsTab';
-import ApiSettings from '@/components/rider-dashboard/ApiSettings';
 import { useRiderDashboard } from '@/hooks/useRiderDashboard';
 
 const RiderDashboardPage: React.FC = () => {
@@ -138,15 +136,12 @@ const RiderDashboardPage: React.FC = () => {
             )}
 
             {activeTab === 'settings' && (
-              <>
-                <SettingsTab 
-                  locationEnabled={locationEnabled}
-                  handleLocationToggle={handleLocationToggle}
-                  notificationsEnabled={notificationsEnabled}
-                  handleNotificationToggle={handleNotificationToggle}
-                />
-                <ApiSettings />
-              </>
+              <SettingsTab 
+                locationEnabled={locationEnabled}
+                handleLocationToggle={handleLocationToggle}
+                notificationsEnabled={notificationsEnabled}
+                handleNotificationToggle={handleNotificationToggle}
+              />
             )}
           </div>
         </div>
