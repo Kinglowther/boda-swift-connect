@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { User } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ interface RiderSidebarProps {
   handleLogout: () => void;
 }
 
-const RiderSidebar: React.FC<RiderSidebarProps> = ({ user, riderStats, isOnline, setIsOnline: setIsOnlineProp, activeTab, handleTabChange, handleLogout }) => {
+const RiderSidebar: React.FC<RiderSidebarProps> = ({ user, riderStats, isOnline, setIsOnline, activeTab, handleTabChange, handleLogout }) => {
   return (
     <>
       {/* User Profile Section */}
@@ -48,7 +47,7 @@ const RiderSidebar: React.FC<RiderSidebarProps> = ({ user, riderStats, isOnline,
           </div>
           <Switch
             checked={isOnline}
-            onCheckedChange={setIsOnlineProp}
+            onCheckedChange={setIsOnline}
           />
         </div>
 

@@ -21,10 +21,10 @@ const RiderDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { orders, acceptOrder } = useOrder();
-  const { updateRiderLocation } = useRider();
+  const { riders, updateRiderLocation, updateRiderStatus } = useRider();
 
   const [activeTab, setActiveTab] = useState('available-orders');
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,6 +39,8 @@ const RiderDashboardPage: React.FC = () => {
   });
 
   // Get rider's orders
+  const rider = user ? riders.find(r => r.id === user.id) : null;
+  const riderLocation = rider?.location;
   const riderOrders = user ? orders.filter(order => order.riderId === user.id) : [];
   const availableOrders = orders.filter(order => !order.riderId);
 
@@ -142,6 +144,7 @@ const RiderDashboardPage: React.FC = () => {
       requestLocationPermission();
     } else {
       setLocationEnabled(false);
+      setIsOnline(false); // Rider can't be online without location
     }
   };
 
@@ -152,6 +155,25 @@ const RiderDashboardPage: React.FC = () => {
       setNotificationsEnabled(false);
     }
   };
+
+  const handleIsOnlineChange = (online: boolean) => {
+    if (online && !locationEnabled) {
+      alert('Please enable location access in Settings to go online.');
+      setIsOnline(false); // Keep it false if toggled on without permission
+      return;
+    }
+    setIsOnline(online);
+  };
+
+  useEffect(() => {
+    if (user && updateRiderStatus) {
+      // Make sure rider is found before updating status
+      const currentRider = riders.find(r => r.id === user.id);
+      if (currentRider) {
+        updateRiderStatus(user.id, isOnline ? 'available' : 'offline');
+      }
+    }
+  }, [isOnline, user, updateRiderStatus, riders]);
 
   useEffect(() => {
     if (locationEnabled && user && 'geolocation' in navigator) {
@@ -210,7 +232,7 @@ const RiderDashboardPage: React.FC = () => {
               user={user} 
               riderStats={riderStats} 
               isOnline={isOnline} 
-              setIsOnline={setIsOnline} 
+              setIsOnline={handleIsOnlineChange} 
               activeTab={activeTab} 
               handleTabChange={handleTabChange} 
               handleLogout={handleLogout} 
@@ -234,7 +256,7 @@ const RiderDashboardPage: React.FC = () => {
                   user={user} 
                   riderStats={riderStats} 
                   isOnline={isOnline} 
-                  setIsOnline={setIsOnline} 
+                  setIsOnline={handleIsOnlineChange} 
                   activeTab={activeTab} 
                   handleTabChange={handleTabChange} 
                   handleLogout={handleLogout} 
@@ -274,7 +296,7 @@ const RiderDashboardPage: React.FC = () => {
               )}
 
               {activeTab === 'my-orders' && (
-                <MyOrdersTab riderOrders={riderOrders} />
+                <MyOrdersTab riderOrders={riderOrders} riderLocation={riderLocation} />
               )}
 
               {activeTab === 'settings' && (
