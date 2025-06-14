@@ -56,18 +56,53 @@ const RiderRegistrationPage: React.FC = () => {
   }, []);
   
   const handleFileChange = (file: File | null, setter: React.Dispatch<React.SetStateAction<File | null>>, previewSetter: React.Dispatch<React.SetStateAction<string | null>>) => {
+    if (!file) {
+      setter(null);
+      previewSetter(null);
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please upload a valid image file (PNG, JPG).",
+      });
+      return;
+    }
+
+    // Validate file size (up to 10MB as per UI text)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please upload an image smaller than 10MB.",
+      });
+      return;
+    }
+    
     setter(file);
     
-    // Create and set preview URL
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        previewSetter(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
+    const reader = new FileReader();
+    
+    reader.onload = () => {
+      previewSetter(reader.result as string);
+    };
+
+    reader.onerror = () => {
+      console.error("Error reading file");
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: "There was an error reading your file. Please try again.",
+      });
+      // Reset state if read fails
+      setter(null);
       previewSetter(null);
-    }
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const FileUploadField = ({ 
@@ -93,9 +128,7 @@ const RiderRegistrationPage: React.FC = () => {
           accept={accept}
           onChange={(e) => {
             const selectedFile = e.target.files?.[0] || null;
-            if (selectedFile) {
-              handleFileChange(selectedFile, setFile, setPreview);
-            }
+            handleFileChange(selectedFile, setFile, setPreview);
           }}
           className="hidden"
           id={label.replace(/\s+/g, '-').toLowerCase()}

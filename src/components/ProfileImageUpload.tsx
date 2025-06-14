@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,6 +52,15 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       const result = e.target?.result as string;
       setPreview(result);
       onImageChange(result);
+      setUploading(false);
+    };
+    reader.onerror = () => {
+      console.error("Error reading file for profile image");
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: "There was an error reading your file. Please try again.",
+      });
       setUploading(false);
     };
     reader.readAsDataURL(file);
