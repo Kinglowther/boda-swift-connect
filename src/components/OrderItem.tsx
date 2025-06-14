@@ -1,15 +1,17 @@
-
 import React from 'react';
 import { Order } from '../types';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
+import { User, Phone } from 'lucide-react'; // Assuming User is an icon for customer
 
 interface OrderItemProps {
   order: Order;
   onClick?: (order: Order) => void;
+  customerName?: string;
+  customerPhone?: string;
 }
 
-const OrderItem: React.FC<OrderItemProps> = ({ order, onClick }) => {
+const OrderItem: React.FC<OrderItemProps> = ({ order, onClick, customerName, customerPhone }) => {
   // Get the latest status
   const currentStatus = order.status[order.status.length - 1].status;
   
@@ -54,7 +56,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onClick }) => {
             <span className="text-muted-foreground">{order.description}</span>
           </p>
         )}
-        {order.recipientName && (
+        {order.recipientName && ( // This is recipient, not necessarily the customer placing the order
           <p className="text-sm text-foreground">
             <span className="font-medium">Recipient: </span>
             <span className="text-muted-foreground">
@@ -63,7 +65,27 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onClick }) => {
             </span>
           </p>
         )}
+         {/* Display Customer Info if provided */}
+        {customerName && (
+          <div className="flex items-center text-sm text-muted-foreground mt-1">
+            <User className="h-4 w-4 mr-1.5 text-foreground" />
+            <span className="text-foreground font-medium mr-1">Customer:</span> {customerName}
+          </div>
+        )}
+        {customerPhone && (
+           <div className="flex items-center text-sm text-muted-foreground">
+             <Phone className="h-4 w-4 mr-1.5 text-foreground" />
+             <span className="text-foreground font-medium mr-1">Phone:</span> {customerPhone}
+           </div>
+        )}
       </div>
+
+      {/* Display Price */}
+      {typeof order.price === 'number' && (
+        <p className="text-sm font-semibold text-foreground mb-2">
+          Price: Ksh. {order.price.toLocaleString()}
+        </p>
+      )}
       
       <div className="text-xs text-muted-foreground">
         {formatDate(order.createdAt)}

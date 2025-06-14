@@ -1,22 +1,27 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { User, UserRole } from '../types'; // Ensure User is imported from types
+import { useToast } from "@/components/ui/use-toast"; // Correct path for useToast
+import { useNavigate } from 'react-router-dom';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'customer' | 'rider';
-  profileImage?: string;
-}
+
+// Mock users data - adjust as needed, ensure some match potential customerIds
+const mockAllUsers: User[] = [
+  { id: 'customer-1', name: 'Alice Customer', email: 'alice@example.com', role: 'customer', phone: '0712345670' },
+  { id: 'customer-2', name: 'Bob Client', email: 'bob@example.com', role: 'customer', phone: '0712345671' },
+  { id: 'rider-1', name: 'Charlie Rider', email: 'charlie@example.com', role: 'rider', phone: '0712345672', profileImage: '/placeholder.svg' },
+  // Logged in user from existing logic
+  // { id: 'user-123', name: 'Test User', email: 'test@example.com', role: 'customer', phone: '0700000000' },
+];
+
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, phone: string, password: string, role: 'customer' | 'rider', profileImage?: string) => Promise<boolean>;
+  users: User[]; // Keep existing users array if it serves a purpose, or merge logic
+  login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (updates: Partial<User>) => Promise<boolean>;
+  register: (userData: Partial<Omit<User, 'id' | 'role'>>) => Promise<boolean>;
+  loading: boolean;
+  getUserById: (userId: string) => User | undefined; // New function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,140 +34,154 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock users data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Customer',
-    email: 'customer@example.com',
-    phone: '0712345678',
-    role: 'customer',
-    profileImage: '/placeholder.svg'
-  },
-  {
-    id: '2',
-    name: 'Robert Rider',
-    email: 'rider@example.com', 
-    phone: '0723456789',
-    role: 'rider',
-    profileImage: '/placeholder.svg'
-  }
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  // Initialize with mockAllUsers or merge with existing users logic
+  const [users, setUsers] = useState<User[]>(() => {
+    // Example: Load from localStorage or start with mock
+    const storedUser = localStorage.getItem('loggedInUser');
+    const initialUsers = [...mockAllUsers];
+    if (storedUser) {
+        try {
+            const parsedUser = JSON.parse(storedUser) as User;
+            // Avoid duplicates if loggedInUser is already in mockAllUsers
+            if (!initialUsers.find(u => u.id === parsedUser.id)) {
+                initialUsers.push(parsedUser);
+            }
+        } catch (e) {
+            console.error("Failed to parse stored user", e);
+        }
+    }
+    return initialUsers;
+  });
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem('currentUser');
+    // Check if there's a logged-in user in localStorage
+    const storedUser = localStorage.getItem('loggedInUser');
     if (storedUser) {
       try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('currentUser');
+        const parsedUser = JSON.parse(storedUser) as User;
+        setUser(parsedUser);
+        // Ensure the logged-in user is also in the 'users' list if not already
+        setUsers(prevUsers => {
+            if (!prevUsers.find(u => u.id === parsedUser.id)) {
+                return [...prevUsers, parsedUser];
+            }
+            return prevUsers;
+        });
+      } catch (e) {
+        console.error("Failed to parse stored user from localStorage:", e);
+        localStorage.removeItem('loggedInUser'); // Clear corrupted data
       }
     }
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, pass: string): Promise<boolean> => {
+    setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = users.find(u => u.email === email);
-    
-    if (foundUser) {
+
+    // Basic validation - in a real app, this would hit a backend
+    // For now, let's check against our mock users or a predefined test user
+    let foundUser = users.find(u => u.email === email); // Check against all users for login
+
+    // If not found, and for demo purposes, let's allow login with a generic test user if not in list
+    if (!foundUser && email === "test@example.com" && pass === "password") {
+        foundUser = {
+            id: `user-${Date.now()}`, // ensure unique ID for demo
+            name: 'Test User',
+            email: 'test@example.com',
+            role: 'customer', // Default role or determine based on email
+            phone: '0712345000', // Default phone
+        };
+        setUsers(prev => [...prev, foundUser!]); // Add to users list if newly created for demo
+    } else if (!foundUser && email === "rider@example.com" && pass === "password") {
+        foundUser = {
+            id: `rider-${Date.now()}`,
+            name: 'Demo Rider',
+            email: 'rider@example.com',
+            role: 'rider',
+            phone: '0712345001',
+        };
+        setUsers(prev => [...prev, foundUser!]);
+    }
+
+
+    if (foundUser) { // Assuming password check is 'password' for any demo user
       setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${foundUser.name}!`,
-      });
-      
+      localStorage.setItem('loggedInUser', JSON.stringify(foundUser));
+      toast({ title: "Login Successful", description: `Welcome back, ${foundUser.name}!` });
+      setLoading(false);
+      if (foundUser.role === 'rider') navigate('/rider-dashboard');
+      else if (foundUser.role === 'customer') navigate('/customer-dashboard');
+      else navigate('/');
       return true;
     } else {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid email or password",
-      });
+      toast({ variant: "destructive", title: "Login Failed", description: "Invalid email or password." });
+      setLoading(false);
       return false;
     }
   };
 
-  const register = async (name: string, email: string, phone: string, password: string, role: 'customer' | 'rider', profileImage?: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: "User with this email already exists",
-      });
-      return false;
-    }
-    
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name,
-      email,
-      phone,
-      role,
-      profileImage: profileImage || '/placeholder.svg'
-    };
-    
-    setUsers(prev => [...prev, newUser]);
-    setUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    toast({
-      title: "Registration Successful",
-      description: `Welcome to Boda, ${name}!`,
-    });
-    
-    return true;
-  };
-
-  const updateProfile = async (updates: Partial<User>): Promise<boolean> => {
-    if (!user) return false;
-    
-    // Simulate API call
+  const register = async (userData: Partial<Omit<User, 'id' | 'role'>>): Promise<boolean> => {
+    setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if (!userData.email || !userData.name || !userData.phone) {
+        toast({ variant: "destructive", title: "Registration Failed", description: "Please fill all required fields." });
+        setLoading(false);
+        return false;
+    }
+
+    if (users.find(u => u.email === userData.email)) {
+        toast({ variant: "destructive", title: "Registration Failed", description: "Email already exists." });
+        setLoading(false);
+        return false;
+    }
     
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    // Determine role based on some logic, e.g., a flag in userData or default to 'customer'
+    // For this example, default to 'customer'. If it's rider registration, that flow should set role to 'rider'.
+    const role: UserRole = (userData as any).isRider ? 'rider' : 'customer';
+
+
+    const newUser: User = {
+        id: `user-${Date.now()}`,
+        name: userData.name!,
+        email: userData.email!,
+        phone: userData.phone!,
+        profileImage: userData.profileImage || '/placeholder.svg',
+        role: role, // Default to customer, RiderRegistration should override
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    // Do not auto-login on register, redirect to login page
+    // setUser(newUser); 
+    // localStorage.setItem('loggedInUser', JSON.stringify(newUser));
     
-    // Update in users list as well
-    setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
-    
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been updated successfully.",
-    });
-    
+    toast({ title: "Registration Successful", description: "Please login with your new account." });
+    setLoading(false);
+    navigate('/login'); // Redirect to login after registration
     return true;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
-    
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
+    localStorage.removeItem('loggedInUser');
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    navigate('/'); // Redirect to home or login page after logout
+  };
+
+  const getUserById = (userId: string): User | undefined => {
+    console.log("AuthContext: Searching for user ID:", userId, "in users list:", users);
+    return users.find(u => u.id === userId);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, users, login, logout, register, loading, getUserById }}>
       {children}
     </AuthContext.Provider>
   );
