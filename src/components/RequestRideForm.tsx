@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useOrder } from '@/contexts/OrderContext';
 import { useRider } from '@/contexts/RiderContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,52 +41,8 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
   
-  // Get current location
-  useEffect(() => {
-    if (useCurrentLocation) {
-      setLoading(true);
-      
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const { latitude, longitude } = position.coords;
-            setPickupCoords({ lat: latitude, lng: longitude });
-            setPickupLocation('Your Current Location');
-            setLoading(false);
-            
-            // Calculate distance if dropoff location is set
-            if (dropoffCoords) {
-              calculateDistance(
-                { lat: latitude, lng: longitude },
-                dropoffCoords
-              );
-            }
-          },
-          error => {
-            toast({
-              variant: "destructive",
-              title: "Location Access Denied",
-              description: "Please enter your pickup location manually.",
-            });
-            setUseCurrentLocation(false);
-            setLoading(false);
-          },
-          { enableHighAccuracy: true }
-        );
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Location Not Available",
-          description: "Geolocation is not supported by your browser.",
-        });
-        setUseCurrentLocation(false);
-        setLoading(false);
-      }
-    }
-  }, [useCurrentLocation, toast]);
-  
   // Calculate distance and price when locations change
-  const calculateDistance = (pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
+  const calculateDistance = useCallback((pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
     // In a real app, this would use Google Maps Distance Matrix API
     // For now, we'll calculate a rough distance using the Haversine formula
     
@@ -108,23 +63,61 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     const perKmRate = 50; // KSH per km
     const calculatedPrice = baseFare + (calculatedDistance * perKmRate);
     setPrice(Math.ceil(calculatedPrice));
-  };
+  }, [setDistance, setPrice]);
+
+  // Get current location
+  useEffect(() => {
+    if (useCurrentLocation) {
+      setLoading(true);
+      
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude } = position.coords;
+            const currentPickupCoords = { lat: latitude, lng: longitude };
+            setPickupCoords(currentPickupCoords);
+            setPickupLocation('Your Current Location');
+            setLoading(false);
+            
+            if (dropoffCoords) {
+              calculateDistance(currentPickupCoords, dropoffCoords);
+            }
+          },
+          error => {
+            toast({
+              variant: "destructive",
+              title: "Location Access Denied",
+              description: "Please enable location services or enter your pickup location manually.",
+            });
+            setUseCurrentLocation(false);
+            setLoading(false);
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Location Not Available",
+          description: "Geolocation is not supported by your browser.",
+        });
+        setUseCurrentLocation(false);
+        setLoading(false);
+      }
+    }
+  }, [useCurrentLocation, toast, dropoffCoords, calculateDistance]); // Added dropoffCoords and calculateDistance
   
   // Simulate geocoding for demo purposes
-  const simulateGeocoding = (address: string, isPickup: boolean) => {
+  const simulateGeocoding = useCallback((address: string, isPickup: boolean) => {
     setLoading(true);
     
-    // In a real app, this would use a geocoding API
-    // For now, generate random coordinates near Nairobi as an example
     setTimeout(() => {
-      // Generate a random point near Nairobi (approximate coordinates: -1.286389, 36.817223)
       const baseLat = -1.286389;
       const baseLng = 36.817223;
-      const jitter = 0.02 * (Math.random() - 0.5); // Add some randomness
+      const jitter = 0.02 * (Math.random() - 0.5); 
       
       const coords = {
         lat: baseLat + jitter,
-        lng: baseLng + jitter + (isPickup ? -0.01 : 0.01) // Separate pickup and dropoff slightly
+        lng: baseLng + jitter + (isPickup ? -0.01 : 0.01) 
       };
       
       if (isPickup) {
@@ -141,31 +134,36 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
       
       setLoading(false);
     }, 1000);
-  };
+  }, [pickupCoords, dropoffCoords, calculateDistance, setLoading, setPickupCoords, setDropoffCoords]);
   
-  const handlePickupLocationChange = (location: string) => {
+  const handlePickupLocationChange = useCallback((location: string) => {
     setPickupLocation(location);
     if (location.trim() && !useCurrentLocation) {
       simulateGeocoding(location, true);
     }
-  };
+  }, [simulateGeocoding, useCurrentLocation, setPickupLocation]);
   
-  const handleDropoffLocationChange = (location: string) => {
+  const handleDropoffLocationChange = useCallback((location: string) => {
     setDropoffLocation(location);
     if (location.trim()) {
       simulateGeocoding(location, false);
     }
-  };
+  }, [simulateGeocoding, setDropoffLocation]);
   
+  // Toggle current location button
   const handleToggleCurrentLocation = () => {
     setUseCurrentLocation(prev => !prev);
+    if (!useCurrentLocation) { // If turning on
+      // Clear manual pickup location if switching to current location
+      setPickupLocation(''); 
+      setPickupCoords(null);
+    }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (step === 'details') {
-      // Validate form
       if (!pickupLocation || !dropoffLocation || !description) {
         toast({
           variant: "destructive",
@@ -174,13 +172,21 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         });
         return;
       }
-      
-      // Move to confirmation step
+      if (!pickupCoords || !dropoffCoords) {
+        toast({
+          variant: "destructive",
+          title: "Location Not Set",
+          description: "Please ensure both pickup and dropoff locations are set on the map.",
+        });
+        // Optionally, trigger geocoding again if addresses are filled but coords are missing
+        if (pickupLocation && !pickupCoords && !useCurrentLocation) simulateGeocoding(pickupLocation, true);
+        if (dropoffLocation && !dropoffCoords) simulateGeocoding(dropoffLocation, false);
+        return;
+      }
       setStep('confirm');
       return;
     }
     
-    // For confirm step, submit the order
     if (!user) {
       toast({
         variant: "destructive",
@@ -193,16 +199,13 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     setLoading(true);
     
     try {
-      // copilot fix: Use actual pickup coordinates if available for nearest rider search
       let nearestRider = null;
       if (pickupCoords && pickupCoords.lat && pickupCoords.lng) {
         nearestRider = getNearestRider(pickupCoords.lat, pickupCoords.lng);
       } else {
-        // fallback to Nairobi center if coords missing
-        nearestRider = getNearestRider(-1.2864, 36.8172);
+        nearestRider = getNearestRider(-1.2864, 36.8172); // Nairobi center fallback
       }
 
-      // copilot fix: Include pickup/dropoff coordinates in orderData if available
       const orderData = {
         customerId: user.id,
         pickupLocation,
@@ -210,14 +213,13 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         description,
         recipientName,
         recipientPhone,
-        // copilot fix: add coordinates for backend/rider assignment if needed
         pickupLat: pickupCoords?.lat,
         pickupLng: pickupCoords?.lng,
         dropoffLat: dropoffCoords?.lat,
         dropoffLng: dropoffCoords?.lng,
+        price: price ?? 0, // Send calculated price
       };
 
-      // Place the order
       const success = await placeOrder(orderData);
 
       if (success) {
@@ -228,21 +230,41 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
             : "Looking for available riders in your area...",
         });
 
-        // Try to show a browser notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification("Ride Requested", {
-            body: "We're looking for a rider nearby",
-            icon: "/favicon.ico"
-          });
-        } else if ('Notification' in window && Notification.permission !== 'denied') {
-          // Request permission for notifications
-          Notification.requestPermission();
+        try {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification("Ride Requested", {
+              body: "We're looking for a rider nearby.",
+              icon: "/favicon.ico"
+            });
+          } else if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+              if (permission === "granted") {
+                new Notification("Ride Requested", {
+                  body: "We're looking for a rider nearby (permission granted).",
+                  icon: "/favicon.ico"
+                });
+              }
+            }).catch(notificationError => {
+              console.warn("Notification permission request failed:", notificationError);
+            });
+          }
+        } catch (notificationError) {
+          console.warn("Error with notification system:", notificationError);
         }
 
         onSuccess();
+      } else {
+        // This case implies placeOrder resolved to false without throwing an error.
+        // The current mock implementation of placeOrder always returns true or would let an internal error propagate.
+        // Adding a toast here for completeness if placeOrder's behavior changes.
+        toast({
+            variant: "destructive",
+            title: "Order Not Confirmed",
+            description: "The ride request could not be confirmed. Please try again.",
+        });
       }
     } catch (error) {
-      console.error("Error placing order:", error);
+      console.error("Error placing order in handleSubmit:", error);
       toast({
         variant: "destructive",
         title: "Request Failed",
@@ -281,7 +303,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     type="button"
                     variant="outline"
                     size="sm"
-                    className={useCurrentLocation ? "bg-green-500 text-white" : ""}
+                    className={useCurrentLocation ? "bg-green-500 text-white hover:bg-green-600" : "hover:bg-muted"}
                     onClick={handleToggleCurrentLocation}
                   >
                     <MapPin className="mr-2 h-3 w-3" /> 
@@ -357,7 +379,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   </div>
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                      Estimated Price: 
+                      Estimated Price (before discount): 
                     </p>
                     <span className="text-foreground">Ksh. {price + discount}</span>
                   </div>
@@ -387,21 +409,21 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-green-500 hover:bg-green-600"
-                  disabled={!pickupLocation || !dropoffLocation || !description}
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                  disabled={!pickupLocation || !dropoffLocation || !description || !pickupCoords || !dropoffCoords || price === null}
                 >
                   <Navigation className="mr-2 h-4 w-4" />
                   Continue
                 </Button>
               </div>
             </>
-          ) : (
+          ) : ( // Confirmation Step
             <>
               <div className="space-y-4">
                 <LocationMap 
                   pickupLocation={pickupCoords}
                   dropoffLocation={dropoffCoords}
-                  isSimulation={true}
+                  isSimulation={true} // Keep simulation true to show route line
                 />
                 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -429,37 +451,39 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   </div>
                 )}
                 
-                <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                        Base Fare: 
-                      </p>
-                      <span className="text-foreground">Ksh. 100</span>
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                        Distance Cost ({distance} km): 
-                      </p>
-                      <span className="text-foreground">Ksh. {Math.round((price || 0) - 100)}</span>
-                    </div>
-                    <div className="flex justify-between items-center mt-1 text-green-600 dark:text-green-400">
-                      <p className="text-sm font-medium">
-                        Shujaa Discount:
-                      </p>
-                      <span>- Ksh. {discount}</span>
-                    </div>
-                    <hr className="my-2 border-green-200 dark:border-green-700" />
-                    <div className="flex justify-between items-center font-bold">
-                      <p className="text-green-800 dark:text-green-300">
-                        Final Price:
-                      </p>
-                      <Badge className="bg-green-500 text-white text-lg py-1">
-                        Ksh. {price}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+                {price !== null && (
+                  <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                          Base Fare: 
+                        </p>
+                        <span className="text-foreground">Ksh. 100</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                          Distance Cost ({distance ?? 0} km): 
+                        </p>
+                        <span className="text-foreground">Ksh. {Math.round((price + discount) - 100 - discount)}</span>
+                      </div>
+                       <div className="flex justify-between items-center mt-1 text-green-600 dark:text-green-400">
+                        <p className="text-sm font-medium">
+                          Shujaa Discount:
+                        </p>
+                        <span>- Ksh. {discount}</span>
+                      </div>
+                      <hr className="my-2 border-green-200 dark:border-green-700" />
+                      <div className="flex justify-between items-center font-bold">
+                        <p className="text-green-800 dark:text-green-300">
+                          Final Price:
+                        </p>
+                        <Badge className="bg-green-500 text-white text-lg py-1">
+                          Ksh. {price}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div className="flex justify-between space-x-2 pt-2">
@@ -472,7 +496,8 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </Button>
                 <Button 
                   type="submit" 
-                  className="bg-green-500 hover:bg-green-600"
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                  disabled={loading}
                 >
                   <Package className="mr-2 h-4 w-4" />
                   Request Boda (Ksh. {price})
