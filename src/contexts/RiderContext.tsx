@@ -1,5 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import L from 'leaflet';
 import { Rider } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -153,13 +153,13 @@ export const RiderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return null;
     }
     
-    // Simplified distance calculation (not actual distance)
+    const orderLocation = L.latLng(lat, lng);
+    
     const ridersWithDistance = activeRiders
       .filter(rider => rider.location) // Only riders with location
       .map(rider => {
-        const dlat = rider.location!.lat - lat;
-        const dlng = rider.location!.lng - lng;
-        const distance = Math.sqrt(dlat * dlat + dlng * dlng);
+        const riderLocation = L.latLng(rider.location!.lat, rider.location!.lng);
+        const distance = orderLocation.distanceTo(riderLocation); // Distance in meters
         return { rider, distance };
       });
     

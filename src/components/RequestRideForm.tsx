@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import L from 'leaflet';
 import { useOrder } from '@/contexts/OrderContext';
 import { useRider } from '@/contexts/RiderContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,18 +44,11 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
   
   // Calculate distance and price when locations change
   const calculateDistance = useCallback((pickup: {lat: number, lng: number}, dropoff: {lat: number, lng: number}) => {
-    // In a real app, this would use Google Maps Distance Matrix API
-    // For now, we'll calculate a rough distance using the Haversine formula
-    
-    const R = 6371; // Radius of the Earth in km
-    const dLat = (dropoff.lat - pickup.lat) * Math.PI / 180;
-    const dLon = (dropoff.lng - pickup.lng) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(pickup.lat * Math.PI / 180) * Math.cos(dropoff.lat * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const calculatedDistance = R * c;
+    // Use Leaflet's distanceTo for more accurate great-circle distance
+    const pickupLatLng = L.latLng(pickup.lat, pickup.lng);
+    const dropoffLatLng = L.latLng(dropoff.lat, dropoff.lng);
+    const distanceInMeters = pickupLatLng.distanceTo(dropoffLatLng);
+    const calculatedDistance = distanceInMeters / 1000; // convert to km
     
     setDistance(parseFloat(calculatedDistance.toFixed(1)));
     
