@@ -25,19 +25,18 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ riderOrders, riderLocation })
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4 text-foreground">My Orders</h2>
+      <h2 className="text-xl font-semibold mb-4 text-foreground">Live Map</h2>
 
-      {activeOrder && (
-        <div className="mb-6 rounded-lg overflow-hidden shadow-lg border">
-          <LocationMap 
-            riderLocation={riderLocation}
-            pickupLocation={pickupCoords}
-            dropoffLocation={dropoffCoords}
-            isSimulation={false}
-          />
-        </div>
-      )}
+      <div className="mb-6 rounded-lg overflow-hidden shadow-lg border">
+        <LocationMap 
+          riderLocation={riderLocation}
+          pickupLocation={pickupCoords}
+          dropoffLocation={dropoffCoords}
+          isSimulation={false}
+        />
+      </div>
 
+      <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">My Orders</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {riderOrders.map(order => (
           <OrderItem

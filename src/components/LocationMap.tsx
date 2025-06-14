@@ -10,7 +10,7 @@ interface Location {
 interface LocationMapProps {
   pickupLocation?: Location | null;
   dropoffLocation?: Location | null;
-  riderLocation?: Location;
+  riderLocation?: Location | null;
   isSimulation?: boolean;
 }
 
@@ -20,46 +20,48 @@ const LocationMap: React.FC<LocationMapProps> = ({
   riderLocation, 
   isSimulation = false 
 }) => {
-  const [simulatedPosition, setSimulatedPosition] = useState<Location | undefined>(riderLocation);
+  const [simulatedRiderPosition, setSimulatedRiderPosition] = useState<Location | undefined>();
   
   // For simulation purposes
   useEffect(() => {
-    if (!isSimulation || !pickupLocation || !dropoffLocation) return;
+    if (!isSimulation || !pickupLocation || !dropoffLocation) {
+      setSimulatedRiderPosition(undefined); // Clear simulation if not active
+      return;
+    }
     
     // Create a path from origin to pickup to dropoff
     let step = 0;
     const totalSteps = 20;
     let currentTarget = pickupLocation;
     let reachedPickup = false;
+    let currentPosition = riderLocation || { lat: -1.28 + Math.random() * 0.05, lng: 36.81 + Math.random() * 0.05 };
     
     const interval = setInterval(() => {
       if (step >= totalSteps) {
         if (!reachedPickup) {
           reachedPickup = true;
           step = 0;
+          currentPosition = pickupLocation;
           currentTarget = dropoffLocation;
         } else {
           clearInterval(interval);
+          return;
         }
       }
       
-      // Generate a simulated rider position moving toward target
-      const originLat = -1.28 + Math.random() * 0.05;
-      const originLng = 36.81 + Math.random() * 0.05;
-      
-      const initialPosition = simulatedPosition || { lat: originLat, lng: originLng };
-      
       const progress = step / totalSteps;
-      const newLat = initialPosition.lat + (currentTarget.lat - initialPosition.lat) * (progress * 0.2);
-      const newLng = initialPosition.lng + (currentTarget.lng - initialPosition.lng) * (progress * 0.2);
+      const newLat = currentPosition.lat + (currentTarget.lat - currentPosition.lat) * (progress * 0.2);
+      const newLng = currentPosition.lng + (currentTarget.lng - currentPosition.lng) * (progress * 0.2);
       
-      setSimulatedPosition({ lat: newLat, lng: newLng });
+      setSimulatedRiderPosition({ lat: newLat, lng: newLng });
       
       step++;
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [isSimulation, pickupLocation, dropoffLocation]);
+  }, [isSimulation, pickupLocation, dropoffLocation, riderLocation]);
+
+  const displayRiderLocation = isSimulation ? simulatedRiderPosition : riderLocation;
   
   // Calculate relative positions for the markers based on coordinates
   const getRelativePosition = (location: Location | null | undefined) => {
@@ -83,13 +85,13 @@ const LocationMap: React.FC<LocationMapProps> = ({
   };
   
   // Check if we have coordinates to show
-  const hasCoordinates = pickupLocation || dropoffLocation || simulatedPosition;
+  const hasCoordinates = pickupLocation || dropoffLocation || displayRiderLocation;
   
   return (
     <div className="w-full h-[300px] bg-gray-100 rounded-lg overflow-hidden relative">
       {!hasCoordinates && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-gray-400">Enter locations to see the map</p>
+          <p className="text-gray-400">Map waiting for location data...</p>
         </div>
       )}
       
@@ -124,8 +126,8 @@ const LocationMap: React.FC<LocationMapProps> = ({
       )}
       
       {/* Rider location marker */}
-      {(riderLocation || simulatedPosition) && (
-        <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={getRelativePosition(simulatedPosition || riderLocation)}>
+      {displayRiderLocation && (
+        <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={getRelativePosition(displayRiderLocation)}>
           <div className="relative">
             <Navigation className="h-6 w-6 text-blue-600" />
             <div className="absolute -bottom-1 -left-1 w-8 h-8 bg-blue-400 rounded-full opacity-20 animate-pulse"></div>
