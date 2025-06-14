@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -201,7 +202,7 @@ const CustomerDashboardPage: React.FC = () => {
       {user ? (
         <div className="flex min-h-screen">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:flex w-80 bg-card shadow-lg border-r border-border flex-col">
+          <div className="hidden lg:flex w-80 bg-card shadow-lg border-r border-border flex-col relative z-20">
             <SidebarContent />
           </div>
 

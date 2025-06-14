@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <div className="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden">
