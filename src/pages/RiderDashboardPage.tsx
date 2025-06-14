@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,19 +16,21 @@ import RiderSidebar from '@/components/rider-dashboard/RiderSidebar';
 import AvailableOrdersTab from '@/components/rider-dashboard/AvailableOrdersTab';
 import MyOrdersTab from '@/components/rider-dashboard/MyOrdersTab';
 import SettingsTab from '@/components/rider-dashboard/SettingsTab';
+import { useRiderLocation } from '@/hooks/useRiderLocation';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 
 const RiderDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { orders, acceptOrder } = useOrder();
-  const { riders, updateRiderLocation, updateRiderStatus } = useRider();
+  const { riders, updateRiderStatus } = useRider();
 
   const [activeTab, setActiveTab] = useState('available-orders');
   const [isOnline, setIsOnline] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const watchIdRef = useRef<number | null>(null);
+
+  const { locationEnabled, handleLocationToggle } = useRiderLocation(setIsOnline);
+  const { notificationsEnabled, handleNotificationToggle } = useNotificationPermission();
 
   // Mock rider stats
   const [riderStats] = useState({
@@ -62,100 +64,6 @@ const RiderDashboardPage: React.FC = () => {
     setSidebarOpen(false); // Close sidebar on mobile when tab changes
   };
 
-  const requestLocationPermission = async () => {
-    if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported by your browser.');
-      setLocationEnabled(false); // Ensure switch reflects reality
-      return;
-    }
-  
-    try {
-      const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-  
-      const handlePermissionState = (state: PermissionState) => {
-        if (state === 'granted') {
-          setLocationEnabled(true);
-        } else if (state === 'denied') {
-          alert('Location access has been denied. Please enable it in your browser/OS settings.');
-          setLocationEnabled(false);
-        } else { // prompt
-          // For 'prompt', we need to actively request it to show the dialog
-          navigator.geolocation.getCurrentPosition(
-            () => { // Success after prompt
-              setLocationEnabled(true);
-            },
-            (err) => { // Error after prompt
-              if (err.code === err.PERMISSION_DENIED) {
-                alert('Location access denied. Please enable location services in your browser/OS settings.');
-              } else {
-                alert(`Could not get location: ${err.message}`);
-              }
-              setLocationEnabled(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-          );
-        }
-      };
-      
-      // Set initial state based on current permission
-      handlePermissionState(permissionStatus.state);
-  
-      // Listen for changes in permission status (e.g., user changes it in browser settings)
-      permissionStatus.onchange = () => {
-        handlePermissionState(permissionStatus.state);
-      };
-  
-    } catch (error) {
-      console.error("Error handling location permission:", error);
-      // Fallback for browsers that might not support navigator.permissions.query well for geolocation
-      // or other unexpected errors. Attempt a direct getCurrentPosition.
-      navigator.geolocation.getCurrentPosition(
-        () => setLocationEnabled(true),
-        (err) => {
-          if (err.code === err.PERMISSION_DENIED) {
-            alert('Location access denied. Please enable location services in your browser/OS settings.');
-          } else {
-            alert('Could not determine location permission status or an error occurred.');
-          }
-          setLocationEnabled(false);
-        }
-      );
-    }
-  };
-
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      try {
-        const permission = await Notification.requestPermission();
-        setNotificationsEnabled(permission === 'granted');
-      } catch (error) {
-        alert('Notification permission denied.');
-      }
-    }
-  };
-
-  useEffect(() => {
-    requestLocationPermission();
-    requestNotificationPermission();
-  }, []);
-
-  const handleLocationToggle = (enabled: boolean) => {
-    if (enabled) {
-      requestLocationPermission();
-    } else {
-      setLocationEnabled(false);
-      setIsOnline(false); // Rider can't be online without location
-    }
-  };
-
-  const handleNotificationToggle = (enabled: boolean) => {
-    if (enabled) {
-      requestNotificationPermission();
-    } else {
-      setNotificationsEnabled(false);
-    }
-  };
-
   const handleIsOnlineChange = (online: boolean) => {
     if (online && !locationEnabled) {
       alert('Please enable location access in Settings to go online.');
@@ -174,53 +82,6 @@ const RiderDashboardPage: React.FC = () => {
       }
     }
   }, [isOnline, user, updateRiderStatus, riders]);
-
-  useEffect(() => {
-    if (locationEnabled && user && 'geolocation' in navigator) {
-      // Clear any existing watch before starting a new one
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log(`Rider ${user.id} new location: ${latitude}, ${longitude}`);
-          updateRiderLocation(user.id, latitude, longitude);
-        },
-        (error) => {
-          console.error(`Error watching location for rider ${user.id}:`, error.message);
-          if (error.code === error.PERMISSION_DENIED) {
-            alert('Location access was denied. Please enable it in your browser/OS settings to use this feature. You have been set to Offline.');
-            setLocationEnabled(false); // Turn off the switch
-            setIsOnline(false); // Rider can't be online without location
-          }
-          // Other errors (TIMEOUT, POSITION_UNAVAILABLE) might be transient.
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 20000, // 20 seconds timeout for getting a position
-          maximumAge: 0, // Do not use a cached position
-        }
-      );
-    } else {
-      // If location is disabled or user logs out, clear the watch
-      if (watchIdRef.current !== null) {
-        console.log(`Stopping location watch for rider ${user?.id}`);
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    }
-
-    // Cleanup function to clear watch on component unmount or when dependencies change
-    return () => {
-      if (watchIdRef.current !== null) {
-        console.log(`Cleaning up location watch for rider ${user?.id}`);
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null; // Ensure ref is cleared
-      }
-    };
-  }, [locationEnabled, user, updateRiderLocation, setLocationEnabled, setIsOnline]);
 
   return (
     <Layout>
