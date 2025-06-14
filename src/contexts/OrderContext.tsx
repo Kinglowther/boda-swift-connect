@@ -72,10 +72,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Calculate consistent price based on distance/complexity
-    const basePrice = 200;
-    const distanceMultiplier = Math.random() * 0.5 + 0.8; // 0.8 to 1.3
-    const finalPrice = Math.round(basePrice * distanceMultiplier);
+    // Use the provided price or calculate a default one
+    const finalPrice = orderData.price || 200;
     
     const newOrder: Order = {
       id: `order-${Date.now()}`,
@@ -87,10 +85,19 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       recipientPhone: orderData.recipientPhone,
       shopId: orderData.shopId,
       price: finalPrice,
+      pickupLat: orderData.pickupLat,
+      pickupLng: orderData.pickupLng,
+      dropoffLat: orderData.dropoffLat,
+      dropoffLng: orderData.dropoffLng,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: [{ status: 'pending', timestamp: new Date().toISOString() }],
     };
+    
+    console.log("Creating order with coordinates:", {
+      pickup: { lat: newOrder.pickupLat, lng: newOrder.pickupLng },
+      dropoff: { lat: newOrder.dropoffLat, lng: newOrder.dropoffLng }
+    });
     
     setOrders(prev => [...prev, newOrder]);
     setActiveOrder(newOrder);
