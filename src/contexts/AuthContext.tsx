@@ -8,8 +8,6 @@ const mockAllUsers: User[] = [
   { id: 'customer-1', name: 'Alice Customer', email: 'alice@example.com', role: 'customer', phone: '0712345670' },
   { id: 'customer-2', name: 'Bob Client', email: 'bob@example.com', role: 'customer', phone: '0712345671' },
   { id: 'rider-1', name: 'Charlie Rider', email: 'charlie@example.com', role: 'rider', phone: '0712345672', profileImage: '/placeholder.svg' },
-  // Logged in user from existing logic
-  // { id: 'user-123', name: 'Test User', email: 'test@example.com', role: 'customer', phone: '0700000000' },
 ];
 
 // Define a type for registration payload
@@ -165,13 +163,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setUsers(prev => [...prev, newUser]);
-    // Do not auto-login on register, redirect to login page
-    // setUser(newUser); 
-    // localStorage.setItem('loggedInUser', JSON.stringify(newUser));
+    setUser(newUser); // Auto-login the new user
+    localStorage.setItem('loggedInUser', JSON.stringify(newUser)); // Persist login
     
-    toast({ title: "Registration Successful", description: "Please login with your new account." });
+    toast({ title: "Registration Successful", description: `Welcome, ${newUser.name}!` });
     setLoading(false);
-    navigate('/login'); // Redirect to login after registration
+
+    // Redirect based on role
+    if (newUser.role === 'rider') {
+        navigate('/rider-dashboard');
+    } else if (newUser.role === 'customer') {
+        navigate('/customer-dashboard');
+    } else {
+        navigate('/'); // Fallback, though should not happen with defined roles
+    }
     return true;
   };
 
