@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -85,8 +86,8 @@ const RiderRegistrationPage: React.FC = () => {
     accept?: string;
   }) => (
     <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-boda-400 transition-colors">
+      <Label className="text-foreground">{label}</Label>
+      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary transition-colors bg-card">
         <input
           type="file"
           accept={accept}
@@ -108,20 +109,20 @@ const RiderRegistrationPage: React.FC = () => {
               <div className="w-20 h-20 overflow-hidden rounded-md mb-2">
                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
               </div>
-              <p className="text-sm font-medium text-green-600">{file?.name}</p>
-              <p className="text-xs text-gray-500">Click to change</p>
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">{file?.name}</p>
+              <p className="text-xs text-muted-foreground">Click to change</p>
             </div>
           ) : file ? (
             <>
-              <Camera className="h-8 w-8 text-green-500" />
-              <p className="text-sm font-medium text-green-600">{file.name}</p>
-              <p className="text-xs text-gray-500">Click to change</p>
+              <Camera className="h-8 w-8 text-green-500 dark:text-green-400" />
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">{file.name}</p>
+              <p className="text-xs text-muted-foreground">Click to change</p>
             </>
           ) : (
             <>
-              <Upload className="h-8 w-8 text-gray-400" />
-              <p className="text-sm text-gray-500">Click to upload</p>
-              <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+              <Upload className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Click to upload</p>
+              <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
             </>
           )}
         </label>
@@ -211,17 +212,17 @@ const RiderRegistrationPage: React.FC = () => {
     <Layout>
       <div className="max-w-4xl mx-auto mt-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Become a Boda Rider</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-bold text-foreground">Become a Boda Rider</h1>
+          <p className="text-muted-foreground mt-2">
             Register as a rider to offer delivery services and earn money
           </p>
         </div>
         
-        <div className="boda-card py-6">
+        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-boda-800">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
               
               {/* Profile Photo Upload */}
               <div className="mb-6">
@@ -234,27 +235,27 @@ const RiderRegistrationPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
+                  <Label htmlFor="name" className="text-foreground">Full Name *</Label>
                   <Input
                     id="name"
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="boda-input"
+                    className="bg-background border-border text-foreground"
                     readOnly={!!basicInfo}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone" className="text-foreground">Phone Number *</Label>
                   <Input
                     id="phone"
                     placeholder="07XXXXXXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
-                    className="boda-input"
+                    className="bg-background border-border text-foreground"
                     readOnly={!!basicInfo}
                   />
                 </div>
@@ -263,45 +264,45 @@ const RiderRegistrationPage: React.FC = () => {
 
             {/* Vehicle Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-boda-800">Vehicle Information</h3>
+              <h3 className="text-lg font-semibold text-foreground">Vehicle Information</h3>
               <div className="space-y-2">
-                <Label htmlFor="bikeRegNumber">Motorcycle Registration Number *</Label>
+                <Label htmlFor="bikeRegNumber" className="text-foreground">Motorcycle Registration Number *</Label>
                 <Input
                   id="bikeRegNumber"
                   placeholder="e.g., KAA 123B"
                   value={bikeRegNumber}
                   onChange={(e) => setBikeRegNumber(e.target.value)}
                   required
-                  className="boda-input"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
             </div>
 
             {/* Documentation */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-boda-800">Required Documents</h3>
+              <h3 className="text-lg font-semibold text-foreground">Required Documents</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="idNumber">National ID Number *</Label>
+                  <Label htmlFor="idNumber" className="text-foreground">National ID Number *</Label>
                   <Input
                     id="idNumber"
                     placeholder="National ID Number"
                     value={idNumber}
                     onChange={(e) => setIdNumber(e.target.value)}
                     required
-                    className="boda-input"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="licenseNumber">Driver's License Number *</Label>
+                  <Label htmlFor="licenseNumber" className="text-foreground">Driver's License Number *</Label>
                   <Input
                     id="licenseNumber"
                     placeholder="License Number"
                     value={licenseNumber}
                     onChange={(e) => setLicenseNumber(e.target.value)}
                     required
-                    className="boda-input"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
               </div>
@@ -309,14 +310,14 @@ const RiderRegistrationPage: React.FC = () => {
 
             {/* Photo Uploads */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-boda-800">Document Photos *</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Document Photos *</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 Please upload clear, original copies of all required documents. Photos should be well-lit and all text should be clearly readable.
               </p>
 
               {/* Vehicle Registration */}
               <div className="space-y-4">
-                <h4 className="font-medium text-boda-700">Vehicle Registration Certificate</h4>
+                <h4 className="font-medium text-foreground">Vehicle Registration Certificate</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FileUploadField
                     label="Registration Front *"
@@ -337,7 +338,7 @@ const RiderRegistrationPage: React.FC = () => {
 
               {/* Driver's License */}
               <div className="space-y-4">
-                <h4 className="font-medium text-boda-700">Driver's License</h4>
+                <h4 className="font-medium text-foreground">Driver's License</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FileUploadField
                     label="License Front *"
@@ -358,7 +359,7 @@ const RiderRegistrationPage: React.FC = () => {
 
               {/* National ID */}
               <div className="space-y-4">
-                <h4 className="font-medium text-boda-700">National ID</h4>
+                <h4 className="font-medium text-foreground">National ID</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FileUploadField
                     label="ID Front *"
@@ -378,8 +379,8 @@ const RiderRegistrationPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-4 bg-yellow-50 rounded-md">
-              <p className="text-sm text-yellow-800">
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>Note:</strong> All rider registrations require verification before you can start accepting deliveries. We will review your documents and notify you when approved. Processing time is typically 24-48 hours.
               </p>
             </div>
@@ -401,11 +402,11 @@ const RiderRegistrationPage: React.FC = () => {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Already registered?{' '}
               <a 
                 href="/login" 
-                className="text-boda-600 hover:underline"
+                className="text-primary hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   navigate('/login');
