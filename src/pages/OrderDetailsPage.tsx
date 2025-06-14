@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -209,18 +208,25 @@ const OrderDetailsPage: React.FC = () => {
                 dropoffLocation={{ lat: -1.289389, lng: 36.827223 }}
                 riderLocation={dummyLocation}
                 isSimulation={currentStatus === 'in-progress'}
+                distance={2.5}
+                duration={15}
+                showRouteInfo={true}
               />
               
               <div className="mt-4">
-                <h3 className="font-medium mb-2">Estimated Times</h3>
+                <h3 className="font-medium mb-2">Route Information</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Pickup:</span>
-                    <span className="font-medium">~5 mins</span>
+                    <span>Optimal Route:</span>
+                    <span className="font-medium text-blue-600">Selected</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Delivery:</span>
-                    <span className="font-medium">~15 mins</span>
+                    <span>Distance:</span>
+                    <span className="font-medium">2.5 km</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Est. Duration:</span>
+                    <span className="font-medium">15 mins</span>
                   </div>
                 </div>
               </div>

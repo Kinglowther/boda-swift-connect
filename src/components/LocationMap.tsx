@@ -16,7 +16,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // Create enhanced custom icons with better visibility
-const createCustomIcon = (color: string, icon: string, size: number = 30) => {
+const createCustomIcon = (color: string, icon: string, size: number = 35) => {
   return L.divIcon({
     html: `<div style="
       background-color: ${color};
@@ -25,7 +25,7 @@ const createCustomIcon = (color: string, icon: string, size: number = 30) => {
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
       border: 3px solid white;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -36,7 +36,7 @@ const createCustomIcon = (color: string, icon: string, size: number = 30) => {
         color: white; 
         font-size: ${size * 0.4}px;
         font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
       ">
         ${icon}
       </div>
@@ -49,10 +49,10 @@ const createCustomIcon = (color: string, icon: string, size: number = 30) => {
 };
 
 // Enhanced icons for better visibility
-const pickupIcon = createCustomIcon('#10b981', '📍', 35);
-const dropoffIcon = createCustomIcon('#ef4444', '🏁', 35);
-const riderIcon = createCustomIcon('#3b82f6', '🚴', 32);
-const availableOrderIcon = createCustomIcon('#f59e0b', '📦', 30);
+const pickupIcon = createCustomIcon('#3b82f6', '🚩', 40);
+const dropoffIcon = createCustomIcon('#10b981', '🎯', 40);
+const riderIcon = createCustomIcon('#f59e0b', '🚴', 35);
+const availableOrderIcon = createCustomIcon('#ef4444', '📦', 32);
 
 interface Location {
   lat: number;
@@ -67,6 +67,9 @@ interface LocationMapProps {
   routePolyline?: L.LatLngExpression[];
   isSimulation?: boolean;
   className?: string;
+  distance?: number;
+  duration?: number;
+  showRouteInfo?: boolean;
 }
 
 // Component to auto-fit map bounds
@@ -74,9 +77,64 @@ const RecenterAutomatically: React.FC<{ bounds: L.LatLngBounds | null }> = ({ bo
   const map = useMap();
   useEffect(() => {
     if (bounds && bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [30, 30] });
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [bounds, map]);
+  return null;
+};
+
+// Component to add route info overlay
+const RouteInfoOverlay: React.FC<{ 
+  duration: number; 
+  pickupLocation: Location; 
+  map: L.Map 
+}> = ({ duration, pickupLocation, map }) => {
+  useEffect(() => {
+    if (!map || !pickupLocation) return;
+
+    // Create custom control for route info
+    const routeInfoControl = L.control({ position: 'topright' });
+    
+    routeInfoControl.onAdd = () => {
+      const div = L.DomUtil.create('div', 'route-info-control');
+      div.innerHTML = `
+        <div style="
+          background: #3b82f6;
+          color: white;
+          padding: 8px 12px;
+          border-radius: 20px;
+          font-weight: bold;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 14px;
+        ">
+          <span style="
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+          ">${Math.round(duration)}</span>
+          <span>min</span>
+        </div>
+      `;
+      return div;
+    };
+
+    routeInfoControl.addTo(map);
+
+    return () => {
+      map.removeControl(routeInfoControl);
+    };
+  }, [map, pickupLocation, duration]);
+
   return null;
 };
 
@@ -87,6 +145,9 @@ const LocationMap: React.FC<LocationMapProps> = ({
   riderLocation,
   routePolyline,
   className = "",
+  distance,
+  duration,
+  showRouteInfo = false
 }) => {
   // Calculate bounds for all markers
   const allPoints: L.LatLng[] = [];
@@ -120,9 +181,10 @@ const LocationMap: React.FC<LocationMapProps> = ({
         {pickupLocation && (
           <Marker position={[pickupLocation.lat, pickupLocation.lng]} icon={pickupIcon}>
             <Popup>
-              <div className="font-medium text-green-600 text-center">
-                <div className="text-lg">📍</div>
+              <div className="font-medium text-blue-600 text-center">
+                <div className="text-lg">🚩</div>
                 <div>Pickup Location</div>
+                {distance && <div className="text-sm text-gray-600">Distance: {distance} km</div>}
               </div>
             </Popup>
           </Marker>
@@ -131,7 +193,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         {pickupLocations && pickupLocations.map((location, index) => (
           <Marker key={`pickup-loc-${index}`} position={[location.lat, location.lng]} icon={availableOrderIcon}>
              <Popup>
-               <div className="font-medium text-yellow-600 text-center">
+               <div className="font-medium text-red-600 text-center">
                  <div className="text-lg">📦</div>
                  <div>Available Order</div>
                </div>
@@ -142,9 +204,10 @@ const LocationMap: React.FC<LocationMapProps> = ({
         {dropoffLocation && (
           <Marker position={[dropoffLocation.lat, dropoffLocation.lng]} icon={dropoffIcon}>
             <Popup>
-              <div className="font-medium text-red-600 text-center">
-                <div className="text-lg">🏁</div>
-                <div>Dropoff Location</div>
+              <div className="font-medium text-green-600 text-center">
+                <div className="text-lg">🎯</div>
+                <div>Destination</div>
+                {duration && <div className="text-sm text-gray-600">ETA: {Math.round(duration)} mins</div>}
               </div>
             </Popup>
           </Marker>
@@ -153,7 +216,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         {riderLocation && (
           <Marker position={[riderLocation.lat, riderLocation.lng]} icon={riderIcon}>
             <Popup>
-              <div className="font-medium text-blue-600 text-center">
+              <div className="font-medium text-yellow-600 text-center">
                 <div className="text-lg">🚴</div>
                 <div>Rider Location</div>
               </div>
@@ -161,15 +224,25 @@ const LocationMap: React.FC<LocationMapProps> = ({
           </Marker>
         )}
         
-        {/* Draw accurate route polyline */}
+        {/* Enhanced route polyline - Main route in blue */}
         {routePolyline && routePolyline.length > 0 && (
-          <Polyline 
-            positions={routePolyline} 
-            color="#2563eb" 
-            weight={5} 
-            opacity={0.8}
-            dashArray="0"
-          />
+          <>
+            {/* Shadow/outline for better visibility */}
+            <Polyline 
+              positions={routePolyline} 
+              color="#1e40af" 
+              weight={8} 
+              opacity={0.3}
+            />
+            {/* Main route line */}
+            <Polyline 
+              positions={routePolyline} 
+              color="#3b82f6" 
+              weight={6} 
+              opacity={0.9}
+              dashArray="0"
+            />
+          </>
         )}
         
         {/* Fallback dashed line if no route polyline but have pickup/dropoff */}
@@ -184,6 +257,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
         )}
 
         <RecenterAutomatically bounds={bounds} />
+        
+        {/* Add route info overlay if requested */}
+        {showRouteInfo && duration && pickupLocation && (
+          <RouteInfoOverlay duration={duration} pickupLocation={pickupLocation} map={null as any} />
+        )}
       </MapContainer>
     </div>
   );

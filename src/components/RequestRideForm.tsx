@@ -62,6 +62,8 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
           const perKmRate = 50; // KSH per km
           const calculatedPrice = baseFare + (routeDetails.distance * perKmRate);
           setPrice(Math.ceil(calculatedPrice));
+          
+          console.log(`Best route found: ${routeDetails.distance}km, ${routeDetails.duration}min`);
         } catch (error) {
           console.error("Error calculating route:", error);
           toast({
@@ -282,7 +284,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
       <CardContent>
         {loading && (
           <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10 rounded-xl">
-            <LoadingSpinner size="lg" text="Processing..." />
+            <LoadingSpinner size="lg" text="Finding best route..." />
           </div>
         )}
         
@@ -295,6 +297,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 routePolyline={routePolyline}
                 isSimulation={false}
                 className="z-0"
+                distance={distance}
+                duration={duration}
+                showRouteInfo={true}
               />
 
               <div className="space-y-2">
@@ -371,16 +376,20 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               </div>
               
               {distance !== null && price !== null && (
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <span className="font-semibold text-blue-800 dark:text-blue-300">Optimal Route Selected</span>
+                  </div>
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                      Estimated Distance: 
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                      Distance: 
                     </p>
                     <span className="text-foreground font-bold">{distance} km</span>
                   </div>
                   {duration !== null && duration > 0 && (
                     <div className="flex justify-between items-center mt-1">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
                         Est. Travel Time:
                       </p>
                       <span className="text-foreground flex items-center gap-1 font-bold">
@@ -390,8 +399,8 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     </div>
                   )}
                   <div className="flex justify-between items-center mt-1">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                      Estimated Price (before discount): 
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                      Price (before discount): 
                     </p>
                     <span className="text-foreground">Ksh. {price + discount}</span>
                   </div>
@@ -401,9 +410,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     </p>
                     <span>- Ksh. {discount}</span>
                   </div>
-                  <hr className="my-2 border-green-200 dark:border-green-700" />
+                  <hr className="my-2 border-blue-200 dark:border-blue-700" />
                   <div className="flex justify-between items-center font-bold">
-                    <p className="text-green-800 dark:text-green-300">
+                    <p className="text-blue-800 dark:text-blue-300">
                       Final Price:
                     </p>
                     <span className="text-lg text-foreground">Ksh. {price}</span>
@@ -438,6 +447,9 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                   routePolyline={routePolyline}
                   isSimulation={true}
                   className="z-0"
+                  distance={distance}
+                  duration={duration}
+                  showRouteInfo={true}
                 />
                 
                 <div className="grid md:grid-cols-2 gap-4">
