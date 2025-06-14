@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Navigation, Package, Clock } from 'lucide-react';
 import LocationMap from './LocationMap';
 import LoadingSpinner from './LoadingSpinner';
-import { getRouteDetails } from '@/services/distanceService';
+import { getRouteDetails, geocodeLocation } from '@/services/distanceService';
 
 interface RequestRideFormProps {
   onCancel: () => void;
@@ -112,45 +112,65 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         setLoading(false);
       }
     }
-  }, [useCurrentLocation, toast]); // Added dropoffCoords and calculateDistance
+  }, [useCurrentLocation, toast]);
   
-  // Simulate geocoding for demo purposes
-  const simulateGeocoding = useCallback((address: string, isPickup: boolean) => {
+  // Geocode locations using real geocoding service
+  const geocodeLocationAsync = useCallback(async (address: string, isPickup: boolean) => {
+    if (!address.trim()) return;
+    
     setLoading(true);
     
-    setTimeout(() => {
-      const baseLat = -1.286389;
-      const baseLng = 36.817223;
-      const jitter = 0.02 * (Math.random() - 0.5); 
+    try {
+      const coords = await geocodeLocation(address);
       
-      const coords = {
-        lat: baseLat + jitter,
-        lng: baseLng + jitter + (isPickup ? -0.01 : 0.01) 
-      };
-      
-      if (isPickup) {
-        setPickupCoords(coords);
+      if (coords) {
+        if (isPickup) {
+          setPickupCoords(coords);
+        } else {
+          setDropoffCoords(coords);
+        }
       } else {
-        setDropoffCoords(coords);
+        toast({
+          variant: "destructive",
+          title: "Location not found",
+          description: `Could not find coordinates for "${address}". Please try a more specific location.`,
+        });
       }
-      
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      toast({
+        variant: "destructive",
+        title: "Geocoding failed",
+        description: "Unable to find location coordinates. Please try again.",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, [setLoading, setPickupCoords, setDropoffCoords]);
+    }
+  }, [toast]);
   
   const handlePickupLocationChange = useCallback((location: string) => {
     setPickupLocation(location);
     if (location.trim() && !useCurrentLocation) {
-      simulateGeocoding(location, true);
+      // Debounce geocoding
+      const timeoutId = setTimeout(() => {
+        geocodeLocationAsync(location, true);
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [simulateGeocoding, useCurrentLocation, setPickupLocation]);
+  }, [geocodeLocationAsync, useCurrentLocation]);
   
   const handleDropoffLocationChange = useCallback((location: string) => {
     setDropoffLocation(location);
     if (location.trim()) {
-      simulateGeocoding(location, false);
+      // Debounce geocoding
+      const timeoutId = setTimeout(() => {
+        geocodeLocationAsync(location, false);
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [simulateGeocoding, setDropoffLocation]);
+  }, [geocodeLocationAsync]);
   
   // Toggle current location button
   const handleToggleCurrentLocation = () => {
@@ -180,9 +200,6 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
           title: "Location Not Set",
           description: "Please ensure both pickup and dropoff locations are set on the map.",
         });
-        // Optionally, trigger geocoding again if addresses are filled but coords are missing
-        if (pickupLocation && !pickupCoords && !useCurrentLocation) simulateGeocoding(pickupLocation, true);
-        if (dropoffLocation && !dropoffCoords) simulateGeocoding(dropoffLocation, false);
         return;
       }
       setStep('confirm');
@@ -219,7 +236,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
         pickupLng: pickupCoords?.lng,
         dropoffLat: dropoffCoords?.lat,
         dropoffLng: dropoffCoords?.lng,
-        price: price ?? 0, // Send calculated price
+        price: price ?? 0,
       };
 
       const success = await placeOrder(orderData);
@@ -238,35 +255,15 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
               body: "We're looking for a rider nearby.",
               icon: "/favicon.ico"
             });
-          } else if ('Notification' in window && Notification.permission !== 'denied') {
-            Notification.requestPermission().then(permission => {
-              if (permission === "granted") {
-                new Notification("Ride Requested", {
-                  body: "We're looking for a rider nearby (permission granted).",
-                  icon: "/favicon.ico"
-                });
-              }
-            }).catch(notificationError => {
-              console.warn("Notification permission request failed:", notificationError);
-            });
           }
         } catch (notificationError) {
           console.warn("Error with notification system:", notificationError);
         }
 
         onSuccess();
-      } else {
-        // This case implies placeOrder resolved to false without throwing an error.
-        // The current mock implementation of placeOrder always returns true or would let an internal error propagate.
-        // Adding a toast here for completeness if placeOrder's behavior changes.
-        toast({
-            variant: "destructive",
-            title: "Order Not Confirmed",
-            description: "The ride request could not be confirmed. Please try again.",
-        });
       }
     } catch (error) {
-      console.error("Error placing order in handleSubmit:", error);
+      console.error("Error placing order:", error);
       toast({
         variant: "destructive",
         title: "Request Failed",
@@ -297,6 +294,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 dropoffLocation={dropoffCoords}
                 routePolyline={routePolyline}
                 isSimulation={false}
+                className="z-0"
               />
 
               <div className="space-y-2">
@@ -315,7 +313,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </div>
                 <Input
                   id="pickupLocation"
-                  placeholder="e.g., City Center, Main Street"
+                  placeholder="e.g., Karen, Nairobi"
                   value={pickupLocation}
                   onChange={(e) => handlePickupLocationChange(e.target.value)}
                   disabled={useCurrentLocation}
@@ -328,7 +326,7 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 <Label htmlFor="dropoffLocation" className="text-foreground">Dropoff Location</Label>
                 <Input
                   id="dropoffLocation"
-                  placeholder="e.g., Westlands, Apartment 4B"
+                  placeholder="e.g., Kisumu, Kenya"
                   value={dropoffLocation}
                   onChange={(e) => handleDropoffLocationChange(e.target.value)}
                   required
@@ -378,14 +376,14 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     <p className="text-sm font-medium text-green-800 dark:text-green-300">
                       Estimated Distance: 
                     </p>
-                    <span className="text-foreground">{distance} km</span>
+                    <span className="text-foreground font-bold">{distance} km</span>
                   </div>
                   {duration !== null && duration > 0 && (
                     <div className="flex justify-between items-center mt-1">
                       <p className="text-sm font-medium text-green-800 dark:text-green-300">
                         Est. Travel Time:
                       </p>
-                      <span className="text-foreground flex items-center gap-1">
+                      <span className="text-foreground flex items-center gap-1 font-bold">
                         <Clock className="h-3 w-3"/>
                         {Math.round(duration)} mins
                       </span>
@@ -431,14 +429,15 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                 </Button>
               </div>
             </>
-          ) : ( // Confirmation Step
+          ) : (
             <>
               <div className="space-y-4">
                 <LocationMap 
                   pickupLocation={pickupCoords}
                   dropoffLocation={dropoffCoords}
                   routePolyline={routePolyline}
-                  isSimulation={true} // Keep simulation true to show route line
+                  isSimulation={true}
+                  className="z-0"
                 />
                 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -471,15 +470,21 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     <CardContent className="pt-6">
                       <div className="flex justify-between items-center">
                         <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                          Distance: 
+                        </p>
+                        <span className="text-foreground font-bold">{distance} km</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
                           Base Fare: 
                         </p>
                         <span className="text-foreground">Ksh. 100</span>
                       </div>
                       <div className="flex justify-between items-center mt-1">
                         <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                          Distance Cost ({distance ?? 0} km): 
+                          Distance Cost: 
                         </p>
-                        <span className="text-foreground">Ksh. {Math.round((price + discount) - 100 - discount)}</span>
+                        <span className="text-foreground">Ksh. {Math.round((price + discount) - 100)}</span>
                       </div>
                        <div className="flex justify-between items-center mt-1 text-green-600 dark:text-green-400">
                         <p className="text-sm font-medium">

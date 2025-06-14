@@ -8,6 +8,8 @@ interface RouteDetails {
 }
 
 const routeCache = new Map<string, RouteDetails>();
+
+// Using OpenRouteService API for accurate routing
 const API_KEY = '5b3ce3597851110001cf6248d4425c73420e41c49b16f7f75c9175f6';
 
 export const getRouteDetails = async (
@@ -24,6 +26,7 @@ export const getRouteDetails = async (
   }
   
   try {
+    // Convert waypoints to coordinates format expected by ORS (lng, lat)
     const coordinates = waypoints.map(w => [w.lng, w.lat]);
     
     const response = await fetch(`https://api.openrouteservice.org/v2/directions/${profile}`, {
@@ -40,16 +43,13 @@ export const getRouteDetails = async (
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ORS API Error Response:", errorText);
-      throw new Error(`ORS API error: ${response.status} ${response.statusText}`);
+      console.error(`ORS API error: ${response.status} ${response.statusText}`);
+      throw new Error(`ORS API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("ORS API Response:", data);
     
     if (!data.features || !data.features[0] || !data.features[0].properties) {
-      console.error("Invalid API response structure:", data);
       throw new Error("Invalid API response structure");
     }
 
@@ -58,17 +58,16 @@ export const getRouteDetails = async (
     const geometry = route.geometry;
     
     if (!properties.segments || !properties.segments[0]) {
-      console.error("No route segments found:", properties);
       throw new Error("No route segments found");
     }
     
     const segment = properties.segments[0];
-    const distanceInKm = segment.distance / 1000;
-    const durationInMinutes = segment.duration / 60;
+    const distanceInKm = segment.distance / 1000; // Convert meters to km
+    const durationInMinutes = segment.duration / 60; // Convert seconds to minutes
     
     // Convert geometry coordinates to Leaflet LatLng format
     const polyline = geometry.coordinates.map((coord: number[]) => 
-      L.latLng(coord[1], coord[0])
+      L.latLng(coord[1], coord[0]) // ORS returns [lng, lat], Leaflet expects [lat, lng]
     );
 
     const result = {
@@ -78,23 +77,53 @@ export const getRouteDetails = async (
     };
     
     routeCache.set(cacheKey, result);
-    console.log("Route calculated successfully:", result);
+    console.log(`Route calculated: ${result.distance}km, ${result.duration}min`);
     return result;
 
   } catch (error) {
-    console.error("Error fetching from OpenRouteService:", error);
+    console.error("Error fetching route from OpenRouteService:", error);
     
-    // Fallback to straight-line distance
+    // Fallback to straight-line distance calculation
     const pickupLatLng = L.latLng(waypoints[0].lat, waypoints[0].lng);
     const dropoffLatLng = L.latLng(waypoints[waypoints.length - 1].lat, waypoints[waypoints.length - 1].lng);
     const distanceInMeters = pickupLatLng.distanceTo(dropoffLatLng);
     const distanceInKm = distanceInMeters / 1000;
-
-    console.log("Using fallback straight-line distance:", distanceInKm);
+    
+    // For fallback, estimate duration based on average speed
+    const estimatedDuration = Math.max(5, Math.round(distanceInKm * 1.5)); // ~40km/h average
+    
+    console.log(`Using fallback calculation: ${distanceInKm.toFixed(1)}km`);
     
     return { 
       distance: parseFloat(distanceInKm.toFixed(1)), 
-      duration: Math.max(1, Math.round(distanceInKm * 2)) // Rough estimate: 2 minutes per km
+      duration: estimatedDuration
     };
+  }
+};
+
+// Geocoding function to convert place names to coordinates
+export const geocodeLocation = async (locationName: string): Promise<{ lat: number; lng: number } | null> => {
+  try {
+    // Using OpenRouteService Geocoding API
+    const response = await fetch(`https://api.openrouteservice.org/geocode/search?api_key=${API_KEY}&text=${encodeURIComponent(locationName)}&boundary.country=KE&size=1`);
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.features && data.features.length > 0) {
+      const coordinates = data.features[0].geometry.coordinates;
+      return {
+        lat: coordinates[1],
+        lng: coordinates[0]
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
   }
 };
