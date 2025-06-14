@@ -22,13 +22,14 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <AuthProvider>
-        <OrderProvider>
-          <RiderProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+      <BrowserRouter> {/* Moved BrowserRouter to wrap AuthProvider and other context providers that might use router hooks */}
+        <AuthProvider>
+          <OrderProvider>
+            <RiderProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                {/* Routes are now correctly nested within BrowserRouter and other providers */}
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/login" element={<LoginPage />} />
@@ -40,13 +41,14 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </RiderProvider>
-        </OrderProvider>
-      </AuthProvider>
+              </TooltipProvider>
+            </RiderProvider>
+          </OrderProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   </QueryClientProvider>
 );
 
 export default App;
+

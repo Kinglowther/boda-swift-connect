@@ -3,7 +3,6 @@ import { User, UserRole } from '../types'; // Ensure User is imported from types
 import { useToast } from "@/components/ui/use-toast"; // Correct path for useToast
 import { useNavigate } from 'react-router-dom';
 
-
 // Mock users data - adjust as needed, ensure some match potential customerIds
 const mockAllUsers: User[] = [
   { id: 'customer-1', name: 'Alice Customer', email: 'alice@example.com', role: 'customer', phone: '0712345670' },
@@ -13,13 +12,22 @@ const mockAllUsers: User[] = [
   // { id: 'user-123', name: 'Test User', email: 'test@example.com', role: 'customer', phone: '0700000000' },
 ];
 
+// Define a type for registration payload
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  phone: string;
+  password?: string; // Password for the registration process
+  role: UserRole;    // Role is essential for registration
+  profileImage?: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
   users: User[]; // Keep existing users array if it serves a purpose, or merge logic
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  register: (userData: Partial<Omit<User, 'id' | 'role'>>) => Promise<boolean>;
+  register: (userData: RegisterPayload) => Promise<boolean>; // Updated type here
   loading: boolean;
   getUserById: (userId: string) => User | undefined; // New function
 }
@@ -127,12 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: Partial<Omit<User, 'id' | 'role'>>): Promise<boolean> => {
+  const register = async (userData: RegisterPayload): Promise<boolean> => { // Updated type here
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    if (!userData.email || !userData.name || !userData.phone) {
-        toast({ variant: "destructive", title: "Registration Failed", description: "Please fill all required fields." });
+    if (!userData.email || !userData.name || !userData.phone || !userData.password) { // Password check added
+        toast({ variant: "destructive", title: "Registration Failed", description: "Please fill all required fields including password." });
         setLoading(false);
         return false;
     }
@@ -146,7 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Determine role based on some logic, e.g., a flag in userData or default to 'customer'
     // For this example, default to 'customer'. If it's rider registration, that flow should set role to 'rider'.
     const role: UserRole = (userData as any).isRider ? 'rider' : 'customer';
-
 
     const newUser: User = {
         id: `user-${Date.now()}`,
