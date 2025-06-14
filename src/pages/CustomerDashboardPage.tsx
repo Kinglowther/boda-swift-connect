@@ -200,7 +200,7 @@ const CustomerDashboardPage: React.FC = () => {
   return (
     <Layout>
       {user ? (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen relative">
           {/* Desktop Sidebar */}
           <div className="hidden lg:flex w-80 bg-card shadow-lg border-r border-border flex-col relative z-20">
             <SidebarContent />
@@ -217,7 +217,7 @@ const CustomerDashboardPage: React.FC = () => {
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0">
+            <SheetContent side="left" className="w-80 p-0 z-50">
               <div className="flex flex-col h-full bg-card">
                 <SidebarContent />
               </div>
@@ -225,7 +225,7 @@ const CustomerDashboardPage: React.FC = () => {
           </Sheet>
 
           {/* Main Content */}
-          <div className="flex-1 p-4 lg:p-6">
+          <div className="flex-1 p-4 lg:p-6 relative z-10">
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="lg:ml-0 ml-12">
@@ -242,12 +242,14 @@ const CustomerDashboardPage: React.FC = () => {
 
               {/* Conditionally render content based on showNewOrderForm */}
               {showNewOrderForm ? (
-                <RequestRideForm 
-                  onCancel={handleCancelOrderForm} 
-                  onSuccess={handleOrderSuccess}
-                />
+                <div className="relative z-10">
+                  <RequestRideForm 
+                    onCancel={handleCancelOrderForm} 
+                    onSuccess={handleOrderSuccess}
+                  />
+                </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-6 relative z-10">
                   {/* Current Orders */}
                   {activeTab === 'current-orders' && (
                     <div>

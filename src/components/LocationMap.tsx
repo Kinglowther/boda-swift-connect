@@ -58,6 +58,7 @@ interface LocationMapProps {
   riderLocation?: Location | null;
   routePolyline?: L.LatLngExpression[];
   isSimulation?: boolean;
+  className?: string;
 }
 
 // Component to auto-fit map bounds
@@ -77,6 +78,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
   dropoffLocation, 
   riderLocation,
   routePolyline,
+  className = "",
 }) => {
   // Calculate bounds for all markers
   const allPoints: L.LatLng[] = [];
@@ -93,8 +95,15 @@ const LocationMap: React.FC<LocationMapProps> = ({
     : [-1.286389, 36.817223]; // Default to Nairobi CBD
 
   return (
-    <div className="w-full h-[300px] bg-gray-100 rounded-lg overflow-hidden relative border">
-      <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+    <div className={`w-full h-[300px] bg-gray-100 rounded-lg overflow-hidden relative border z-0 ${className}`}>
+      <MapContainer 
+        center={center} 
+        zoom={13} 
+        style={{ height: '100%', width: '100%', position: 'relative', zIndex: 1 }}
+        zoomControl={true}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
