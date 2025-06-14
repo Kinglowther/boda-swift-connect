@@ -9,11 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import OrderItem from '@/components/OrderItem';
-import { Bike, MapPin, User, Settings, LogOut, Star, Bell, MapPinIcon } from 'lucide-react';
+import { Bike, MapPin, User, Settings, LogOut, Star, Bell, MapPinIcon, Menu, X } from 'lucide-react';
 import RequestRideForm from '@/components/RequestRideForm';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const CustomerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +32,7 @@ const CustomerDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('current-orders');
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Mock Shujaa points for new customers
   const [shujaaPoints] = useState(250);
@@ -51,6 +59,7 @@ const CustomerDashboardPage: React.FC = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setShowNewOrderForm(false); // Hide request form when switching tabs
+    setSidebarOpen(false); // Close sidebar on mobile when tab changes
   };
 
   const requestLocationPermission = async () => {
@@ -93,103 +102,127 @@ const CustomerDashboardPage: React.FC = () => {
     }
   };
 
+  const SidebarContent = () => (
+    <>
+      {/* User Profile Section */}
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center space-x-3 mb-4">
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={user?.profileImage} alt={user?.name} />
+            <AvatarFallback className="bg-boda-600 text-white">
+              {user?.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-semibold text-foreground">{user?.name}</h3>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
+          </div>
+        </div>
+        
+        {/* Shujaa Points */}
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              <span className="font-medium text-yellow-800 dark:text-yellow-200">Shujaa Points</span>
+            </div>
+            <Badge className="bg-yellow-500 text-white">
+              {shujaaPoints}
+            </Badge>
+          </div>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+            Worth Ksh. {(shujaaPoints * 0.5).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex-1 p-4">
+        <nav className="space-y-2">
+          <button
+            onClick={() => handleTabChange('current-orders')}
+            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+              activeTab === 'current-orders' 
+                ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <MapPin className="inline-block h-4 w-4 mr-2" />
+            Current Orders
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('past-orders')}
+            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+              activeTab === 'past-orders' 
+                ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Bike className="inline-block h-4 w-4 mr-2" />
+            Past Orders
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('settings')}
+            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+              activeTab === 'settings' 
+                ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Settings className="inline-block h-4 w-4 mr-2" />
+            Settings
+          </button>
+        </nav>
+      </div>
+
+      {/* Logout Button */}
+      <div className="p-4 border-t border-border">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
+      </div>
+    </>
+  );
+
   return (
     <Layout>
       {user ? (
         <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <div className="w-80 bg-card shadow-lg border-r border-border flex flex-col">
-            {/* User Profile Section */}
-            <div className="p-6 border-b border-border">
-              <div className="flex items-center space-x-3 mb-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={user.profileImage} alt={user.name} />
-                  <AvatarFallback className="bg-boda-600 text-white">
-                    {user.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-semibold text-foreground">{user.name}</h3>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-              
-              {/* Shujaa Points */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Star className="h-5 w-5 text-yellow-500" />
-                    <span className="font-medium text-yellow-800 dark:text-yellow-200">Shujaa Points</span>
-                  </div>
-                  <Badge className="bg-yellow-500 text-white">
-                    {shujaaPoints}
-                  </Badge>
-                </div>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                  Worth Ksh. {(shujaaPoints * 0.5).toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex-1 p-4">
-              <nav className="space-y-2">
-                <button
-                  onClick={() => handleTabChange('current-orders')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    activeTab === 'current-orders' 
-                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <MapPin className="inline-block h-4 w-4 mr-2" />
-                  Current Orders
-                </button>
-                
-                <button
-                  onClick={() => handleTabChange('past-orders')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    activeTab === 'past-orders' 
-                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Bike className="inline-block h-4 w-4 mr-2" />
-                  Past Orders
-                </button>
-                
-                <button
-                  onClick={() => handleTabChange('settings')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    activeTab === 'settings' 
-                      ? 'bg-boda-100 dark:bg-boda-800/50 text-boda-800 dark:text-boda-200 font-medium' 
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Settings className="inline-block h-4 w-4 mr-2" />
-                  Settings
-                </button>
-              </nav>
-            </div>
-
-            {/* Logout Button */}
-            <div className="p-4 border-t border-border">
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+          {/* Desktop Sidebar */}
+          <div className="hidden lg:flex w-80 bg-card shadow-lg border-r border-border flex-col">
+            <SidebarContent />
           </div>
 
+          {/* Mobile Sidebar */}
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="lg:hidden fixed top-20 left-4 z-50 bg-background shadow-lg"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-0">
+              <div className="flex flex-col h-full bg-card">
+                <SidebarContent />
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {/* Main Content */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-4 lg:p-6">
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
+                <div className="lg:ml-0 ml-12">
                   <h1 className="text-2xl font-bold text-foreground">Welcome, {user.name}</h1>
                   <p className="text-muted-foreground">Manage your deliveries and requests</p>
                 </div>
