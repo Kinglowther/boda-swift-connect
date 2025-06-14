@@ -279,22 +279,6 @@ const RiderDashboardPage: React.FC = () => {
     );
   };
 
-  const handleLocationToggle = (enabled: boolean) => {
-    if (enabled) {
-      requestLocationPermission();
-    } else {
-      setLocationEnabled(false);
-    }
-  };
-
-  const handleNotificationToggle = (enabled: boolean) => {
-    if (enabled) {
-      requestNotificationPermission();
-    } else {
-      setNotificationsEnabled(false);
-    }
-  };
-
   useEffect(() => {
     if (locationEnabled && user && 'geolocation' in navigator) {
       // Clear any existing watch before starting a new one
