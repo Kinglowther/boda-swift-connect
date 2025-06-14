@@ -292,6 +292,7 @@ const RiderDashboardPage: React.FC = () => {
                   locationEnabled={locationEnabled}
                   availableOrders={availableOrders}
                   handleAcceptOrder={handleAcceptOrder}
+                  riderLocation={riderLocation}
                 />
               )}
 

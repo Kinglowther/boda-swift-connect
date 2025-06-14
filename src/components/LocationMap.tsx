@@ -9,6 +9,7 @@ interface Location {
 
 interface LocationMapProps {
   pickupLocation?: Location | null;
+  pickupLocations?: Location[];
   dropoffLocation?: Location | null;
   riderLocation?: Location | null;
   isSimulation?: boolean;
@@ -16,6 +17,7 @@ interface LocationMapProps {
 
 const LocationMap: React.FC<LocationMapProps> = ({ 
   pickupLocation, 
+  pickupLocations,
   dropoffLocation, 
   riderLocation, 
   isSimulation = false 
@@ -85,7 +87,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
   };
   
   // Check if we have coordinates to show
-  const hasCoordinates = pickupLocation || dropoffLocation || displayRiderLocation;
+  const hasCoordinates = pickupLocation || dropoffLocation || displayRiderLocation || (pickupLocations && pickupLocations.length > 0);
   
   return (
     <div className="w-full h-[300px] bg-gray-100 rounded-lg overflow-hidden relative">
@@ -113,6 +115,16 @@ const LocationMap: React.FC<LocationMapProps> = ({
           <div className="absolute left-3 top-5 text-xs bg-white px-1 rounded shadow">Pickup</div>
         </div>
       )}
+
+      {/* Multiple Pickup location markers for available orders */}
+      {pickupLocations && pickupLocations.map((location, index) => (
+        <div key={`pickup-loc-${index}`} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={getRelativePosition(location)}>
+          <div className="relative">
+            <MapPin className="h-6 w-6 text-yellow-500" />
+            <div className="absolute -bottom-1 -left-1 w-8 h-8 bg-yellow-400 rounded-full opacity-20 animate-pulse"></div>
+          </div>
+        </div>
+      ))}
       
       {/* Dropoff location marker */}
       {dropoffLocation && (

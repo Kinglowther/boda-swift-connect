@@ -4,13 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import OrderItem from '@/components/OrderItem';
-import { Order } from '@/types';
+import { Order, Rider } from '@/types';
+import LocationMap from '../LocationMap';
 
 interface AvailableOrdersTabProps {
   isOnline: boolean;
   locationEnabled: boolean;
   availableOrders: Order[];
   handleAcceptOrder: (orderId: string) => void;
+  riderLocation?: Rider['location'];
 }
 
 const AvailableOrdersTab: React.FC<AvailableOrdersTabProps> = ({
@@ -18,12 +20,29 @@ const AvailableOrdersTab: React.FC<AvailableOrdersTabProps> = ({
   locationEnabled,
   availableOrders,
   handleAcceptOrder,
+  riderLocation,
 }) => {
   const navigate = useNavigate();
 
+  // Mock coordinates for all available orders' pickup locations
+  const availableOrderPickupLocations = availableOrders.map(() => ({
+    // Distribute mock coordinates around a central point to simulate different locations
+    lat: -1.286389 + (Math.random() - 0.5) * 0.05,
+    lng: 36.817223 + (Math.random() - 0.5) * 0.05,
+  }));
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4 text-foreground">Available Orders</h2>
+      <h2 className="text-xl font-semibold mb-4 text-foreground">Live Map</h2>
+      <div className="mb-6 rounded-lg overflow-hidden shadow-lg border">
+        <LocationMap
+          riderLocation={riderLocation}
+          pickupLocations={availableOrderPickupLocations}
+          isSimulation={false}
+        />
+      </div>
+
+      <h2 className="text-xl font-semibold mt-8 mb-4 text-foreground">Available Orders</h2>
       {!isOnline && (
         <Card className="mb-4 border-orange-200 dark:border-orange-800">
           <CardContent className="p-4">
