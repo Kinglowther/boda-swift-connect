@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -9,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import LocationMap from '@/components/LocationMap';
 import { format } from 'date-fns';
 import { MapPin, Phone, Clock, X } from 'lucide-react';
+import { getRouteDetails } from '@/services/distanceService';
+import L from 'leaflet';
 
 const OrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +22,43 @@ const OrderDetailsPage: React.FC = () => {
   // Find the order
   const order = orders.find(o => o.id === id);
   
-  // Simulate tracking location
+  // Simulate tracking location and route state
   const [dummyLocation, setDummyLocation] = useState({ lat: -1.286389, lng: 36.817223 });
+  const [routePolyline, setRoutePolyline] = useState<L.LatLngExpression[] | undefined>(undefined);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeDuration, setRouteDuration] = useState<number | null>(null);
+  
+  // Get pickup and dropoff coordinates
+  const pickupCoords = order && order.pickupLat && order.pickupLng 
+    ? { lat: order.pickupLat, lng: order.pickupLng } 
+    : null;
+  const dropoffCoords = order && order.dropoffLat && order.dropoffLng 
+    ? { lat: order.dropoffLat, lng: order.dropoffLng }
+    : null;
+  
+  // Load route details when order is available
+  useEffect(() => {
+    const loadRouteDetails = async () => {
+      if (pickupCoords && dropoffCoords) {
+        try {
+          const routeDetails = await getRouteDetails([pickupCoords, dropoffCoords]);
+          setRoutePolyline(routeDetails.polyline);
+          setRouteDistance(routeDetails.distance);
+          setRouteDuration(routeDetails.duration);
+          console.log(`Route loaded: ${routeDetails.distance}km, ${routeDetails.duration}min`);
+        } catch (error) {
+          console.error("Error loading route details:", error);
+          // Fallback to straight line if route service fails
+          setRouteDistance(2.5);
+          setRouteDuration(15);
+        }
+      }
+    };
+
+    if (order) {
+      loadRouteDetails();
+    }
+  }, [order, pickupCoords, dropoffCoords]);
   
   useEffect(() => {
     if (!user || !order) {
@@ -204,13 +242,15 @@ const OrderDetailsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <LocationMap 
-                pickupLocation={{ lat: -1.286389, lng: 36.817223 }}
-                dropoffLocation={{ lat: -1.289389, lng: 36.827223 }}
-                riderLocation={dummyLocation}
+                pickupLocation={pickupCoords}
+                dropoffLocation={dropoffCoords}
+                riderLocation={currentStatus === 'in-progress' ? dummyLocation : null}
+                routePolyline={routePolyline}
                 isSimulation={currentStatus === 'in-progress'}
-                distance={2.5}
-                duration={15}
+                distance={routeDistance}
+                duration={routeDuration}
                 showRouteInfo={true}
+                className="mb-4"
               />
               
               <div className="mt-4">
@@ -222,11 +262,11 @@ const OrderDetailsPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Distance:</span>
-                    <span className="font-medium">2.5 km</span>
+                    <span className="font-medium">{routeDistance ? `${routeDistance} km` : '2.5 km'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Est. Duration:</span>
-                    <span className="font-medium">15 mins</span>
+                    <span className="font-medium">{routeDuration ? `${Math.round(routeDuration)} mins` : '15 mins'}</span>
                   </div>
                 </div>
               </div>
