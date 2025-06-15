@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -119,11 +120,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     return displayName;
   };
 
-  const formatSelectedName = (displayName: string) => {
-    // For selected location, show only: Main Name, Area, Sublocation (if exists)
+  const formatSelectedNameParts = (displayName: string) => {
+    // For selected location, return structured parts for multi-line display
     const parts = displayName.split(',').map(part => part.trim());
     
-    if (parts.length === 0) return displayName;
+    if (parts.length === 0) return { mainName: displayName, area: '', sublocation: '' };
     
     let mainName = parts[0];
     let area = '';
@@ -156,32 +157,15 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
     }
     
-    // Build the short name: "Main Name, Area, Sublocation"
-    let shortName = mainName;
-    
-    if (area && area !== mainName) {
-      shortName += `, ${area}`;
-    }
-    
-    if (sublocation && shortName.length < 40) {
-      shortName += `, ${sublocation}`;
-    }
-    
-    // Final safety check - if still too long, truncate aggressively
-    if (shortName.length > 50) {
-      const firstComma = shortName.indexOf(',');
-      if (firstComma > 0) {
-        shortName = shortName.substring(0, firstComma + 8) + '...';
-      } else {
-        shortName = shortName.substring(0, 25) + '...';
-      }
-    }
-    
-    return shortName;
+    return { mainName, area, sublocation };
   };
 
   const handleSelect = (suggestion: LocationSuggestion) => {
-    const formattedName = formatSelectedName(suggestion.display_name);
+    const nameParts = formatSelectedNameParts(suggestion.display_name);
+    const formattedName = [nameParts.mainName, nameParts.area, nameParts.sublocation]
+      .filter(Boolean)
+      .join(', ');
+    
     onChange(formattedName);
     onLocationSelect(
       { lat: suggestion.lat, lng: suggestion.lon }, 
@@ -189,6 +173,8 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     );
     setOpen(false);
   };
+
+  const selectedNameParts = value ? formatSelectedNameParts(value) : null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -198,14 +184,36 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-start text-left font-normal h-10",
+            "w-full justify-start text-left font-normal min-h-10 h-auto py-2",
             !value && "text-muted-foreground",
             className
           )}
           disabled={disabled}
         >
-          <MapPin className="mr-2 h-4 w-4 shrink-0" />
-          <span className="truncate">{value || placeholder}</span>
+          <MapPin className="mr-2 h-4 w-4 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            {value ? (
+              selectedNameParts && (
+                <div className="space-y-0.5">
+                  <div className="font-medium text-sm leading-tight">
+                    {selectedNameParts.mainName}
+                  </div>
+                  {selectedNameParts.area && (
+                    <div className="text-xs text-muted-foreground leading-tight">
+                      {selectedNameParts.area}
+                    </div>
+                  )}
+                  {selectedNameParts.sublocation && (
+                    <div className="text-xs text-muted-foreground leading-tight">
+                      {selectedNameParts.sublocation}
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
+              <span className="truncate">{placeholder}</span>
+            )}
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
