@@ -120,48 +120,61 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   };
 
   const formatSelectedName = (displayName: string) => {
-    // For selected location, show a concise format: Main Name, Area, Sub-area
+    // For selected location, show only: Main Name, Area, Sublocation (if exists)
     const parts = displayName.split(',').map(part => part.trim());
     
     if (parts.length === 0) return displayName;
     
     let mainName = parts[0];
     let area = '';
-    let subArea = '';
+    let sublocation = '';
     
-    // Find area names (typically Karen, Westlands, etc.)
+    // Clean up main name - remove unnecessary words at the end
+    mainName = mainName.replace(/\s+(Road|Street|Avenue|Drive|Highway)$/i, '');
+    
+    // Find the most relevant area and sublocation
     for (let i = 1; i < parts.length; i++) {
       const part = parts[i].toLowerCase();
-      // Look for common Kenyan area names or ward/sublocation indicators
-      if (part.includes('ward') || part.includes('sublocation') || 
-          part.includes('karen') || part.includes('westlands') || 
-          part.includes('kilimani') || part.includes('lavington') ||
-          part.includes('ngong') || part.includes('kileleshwa') ||
-          part.includes('runda') || part.includes('muthaiga') ||
-          part.includes('gigiri') || part.includes('spring valley')) {
-        if (!area && !part.includes('county') && !part.includes('nairobi')) {
+      
+      // Look for sublocation first
+      if (part.includes('sublocation') && !sublocation) {
+        sublocation = parts[i];
+      }
+      // Then look for main area names (avoiding generic terms)
+      else if (!area && !part.includes('county') && !part.includes('nairobi') && 
+               !part.includes('road') && !part.includes('ward') && 
+               !part.includes('00') && part.length > 2) {
+        // Prioritize known Kenyan areas or the second part if it looks like an area
+        if (part.includes('karen') || part.includes('westlands') || 
+            part.includes('kilimani') || part.includes('lavington') ||
+            part.includes('ngong') || part.includes('kileleshwa') ||
+            part.includes('runda') || part.includes('muthaiga') ||
+            part.includes('gigiri') || part.includes('spring valley') ||
+            i === 1) {
           area = parts[i];
-        } else if (!subArea && part.includes('sublocation')) {
-          subArea = parts[i];
         }
       }
     }
     
-    // Build the shortened name
+    // Build the short name: "Main Name, Area, Sublocation"
     let shortName = mainName;
     
-    if (area) {
+    if (area && area !== mainName) {
       shortName += `, ${area}`;
     }
     
-    // Add sublocation if it exists and name isn't too long yet
-    if (subArea && shortName.length < 35) {
-      shortName += `, ${subArea}`;
+    if (sublocation && shortName.length < 40) {
+      shortName += `, ${sublocation}`;
     }
     
-    // Final check - if still too long, truncate
-    if (shortName.length > 45) {
-      shortName = shortName.substring(0, 42) + '...';
+    // Final safety check - if still too long, truncate aggressively
+    if (shortName.length > 50) {
+      const firstComma = shortName.indexOf(',');
+      if (firstComma > 0) {
+        shortName = shortName.substring(0, firstComma + 8) + '...';
+      } else {
+        shortName = shortName.substring(0, 25) + '...';
+      }
     }
     
     return shortName;
