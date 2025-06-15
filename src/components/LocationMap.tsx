@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -72,17 +71,31 @@ interface LocationMapProps {
   showRouteInfo?: boolean;
 }
 
-// Component to auto-fit map bounds only on initial load
-const RecenterAutomatically: React.FC<{ bounds: L.LatLngBounds | null }> = ({ bounds }) => {
+// Component to auto-fit map bounds only on initial load and location changes
+const RecenterAutomatically: React.FC<{ 
+  bounds: L.LatLngBounds | null;
+  pickupLocation?: Location | null;
+  dropoffLocation?: Location | null;
+}> = ({ bounds, pickupLocation, dropoffLocation }) => {
   const map = useMap();
   const hasInitialized = useRef(false);
+  const lastPickupRef = useRef<Location | null>(null);
+  const lastDropoffRef = useRef<Location | null>(null);
   
   useEffect(() => {
-    if (bounds && bounds.isValid() && !hasInitialized.current) {
+    // Check if locations have changed
+    const pickupChanged = JSON.stringify(pickupLocation) !== JSON.stringify(lastPickupRef.current);
+    const dropoffChanged = JSON.stringify(dropoffLocation) !== JSON.stringify(lastDropoffRef.current);
+    
+    if (bounds && bounds.isValid() && (!hasInitialized.current || pickupChanged || dropoffChanged)) {
       map.fitBounds(bounds, { padding: [50, 50] });
       hasInitialized.current = true;
+      
+      // Update refs to track current locations
+      lastPickupRef.current = pickupLocation;
+      lastDropoffRef.current = dropoffLocation;
     }
-  }, [bounds, map]);
+  }, [bounds, map, pickupLocation, dropoffLocation]);
   
   return null;
 };
@@ -262,7 +275,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
           />
         )}
 
-        <RecenterAutomatically bounds={bounds} />
+        <RecenterAutomatically 
+          bounds={bounds} 
+          pickupLocation={pickupLocation}
+          dropoffLocation={dropoffLocation}
+        />
         
         {/* Add route info overlay if requested */}
         {showRouteInfo && duration && pickupLocation && (
