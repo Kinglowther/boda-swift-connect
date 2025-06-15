@@ -121,17 +121,30 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   };
 
   const formatSelectedName = (displayName: string) => {
-    // For selected location, show only the main location name, very short for mobile
+    // For selected location, extract just the essential name for mobile
     const parts = displayName.split(',');
     let mainName = parts[0].trim();
     
-    // Remove common prefixes/suffixes that make names long
-    mainName = mainName.replace(/^(MP|TRM|Avenue|Road|Street|Drive)\s+/i, '');
-    mainName = mainName.replace(/\s+(Hospital|Mall|Center|Centre|Market|Plaza|Building)$/i, '');
+    // Remove common location type words that make names too long
+    mainName = mainName.replace(/^(MP|TRM|Avenue|Road|Street|Drive|Highway)\s+/i, '');
+    mainName = mainName.replace(/\s+(Hospital|Mall|Center|Centre|Market|Plaza|Building|School|High School|Preparatory School|Boys|Girls)$/i, '');
     
-    // If still too long, truncate to fit mobile screen (max 20 characters)
-    if (mainName.length > 20) {
-      mainName = mainName.substring(0, 17) + '...';
+    // Extract key words if it's still a school or institution
+    if (mainName.toLowerCase().includes('school')) {
+      const schoolMatch = mainName.match(/(\w+(?:\s+\w+)?)\s+.*school/i);
+      if (schoolMatch) {
+        mainName = schoolMatch[1];
+      }
+    }
+    
+    // For roads, just take the road name without "Road"
+    if (mainName.toLowerCase().includes('road')) {
+      mainName = mainName.replace(/\s+road$/i, '').trim();
+    }
+    
+    // If still too long, truncate aggressively for mobile (max 15 characters)
+    if (mainName.length > 15) {
+      mainName = mainName.substring(0, 12) + '...';
     }
     
     return mainName;
