@@ -1,4 +1,3 @@
-
 import L from 'leaflet';
 
 interface RouteDetails {
@@ -11,6 +10,45 @@ const routeCache = new Map<string, RouteDetails>();
 
 // Using OpenRouteService API for accurate routing
 const API_KEY = '5b3ce3597851110001cf6248d4425c73420e41c49b16f7f75c9175f6';
+
+// Function to decode polyline string to coordinates
+const decodePolyline = (polyline: string): [number, number][] => {
+  const coordinates: [number, number][] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < polyline.length) {
+    let shift = 0;
+    let result = 0;
+    let byte;
+
+    do {
+      byte = polyline.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+
+    const deltaLat = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lat += deltaLat;
+
+    shift = 0;
+    result = 0;
+
+    do {
+      byte = polyline.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+
+    const deltaLng = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lng += deltaLng;
+
+    coordinates.push([lat / 1e5, lng / 1e5]);
+  }
+
+  return coordinates;
+};
 
 export const getRouteDetails = async (
   waypoints: { lat: number; lng: number }[],
@@ -35,8 +73,7 @@ export const getRouteDetails = async (
     console.log('📍 Converted coordinates for ORS:', coordinates);
     
     const requestBody = { 
-      coordinates,
-      format: 'geojson'
+      coordinates
     };
     console.log('📤 Sending request to ORS:', requestBody);
     
@@ -45,7 +82,7 @@ export const getRouteDetails = async (
       headers: {
         'Authorization': API_KEY,
         'Content-Type': 'application/json',
-        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(requestBody)
     });
@@ -61,43 +98,52 @@ export const getRouteDetails = async (
     const data = await response.json();
     console.log('📊 Full ORS response data:', JSON.stringify(data, null, 2));
     
-    if (!data.features || !data.features[0]) {
-      console.error('❌ Invalid API response structure - no features found');
-      throw new Error("No route features found in API response");
+    // Check for the correct response structure: data.routes[0]
+    if (!data.routes || !data.routes[0]) {
+      console.error('❌ Invalid API response structure - no routes found');
+      throw new Error("No routes found in API response");
     }
 
-    const route = data.features[0];
-    console.log('🛣️ Route feature:', route);
+    const route = data.routes[0];
+    console.log('🛣️ Route data:', route);
     
-    if (!route.properties || !route.properties.segments || !route.properties.segments[0]) {
-      console.error('❌ Invalid route structure - no segments found');
-      throw new Error("No route segments found in API response");
+    if (!route.summary) {
+      console.error('❌ Invalid route structure - no summary found');
+      throw new Error("No route summary found in API response");
     }
     
-    const segment = route.properties.segments[0];
-    const geometry = route.geometry;
+    const summary = route.summary;
+    console.log('📏 Route summary:', summary);
     
-    console.log('📏 Route segment properties:', segment);
-    console.log('🗺️ Route geometry:', geometry);
-    
-    const distanceInKm = segment.distance / 1000; // Convert meters to km
-    const durationInMinutes = segment.duration / 60; // Convert seconds to minutes
+    const distanceInKm = summary.distance / 1000; // Convert meters to km
+    const durationInMinutes = summary.duration / 60; // Convert seconds to minutes
     
     console.log(`📊 Calculated distance: ${distanceInKm}km, duration: ${durationInMinutes}min`);
     
-    // Convert geometry coordinates to Leaflet LatLng format
+    // Process the geometry to get the polyline
     let polyline: L.LatLngExpression[] = [];
     
-    if (geometry && geometry.coordinates && Array.isArray(geometry.coordinates)) {
-      polyline = geometry.coordinates.map((coord: number[]) => {
-        // ORS returns [lng, lat], Leaflet expects [lat, lng]
-        const latLng = L.latLng(coord[1], coord[0]);
-        return latLng;
-      });
-      console.log('🔄 Converted polyline coordinates:', polyline.length, 'points');
-      console.log('🔍 First few polyline points:', polyline.slice(0, 3));
+    if (route.geometry) {
+      console.log('🗺️ Route geometry found:', typeof route.geometry);
+      
+      if (typeof route.geometry === 'string') {
+        // Decode polyline string
+        console.log('🔄 Decoding polyline string...');
+        const decodedCoords = decodePolyline(route.geometry);
+        polyline = decodedCoords.map(coord => L.latLng(coord[0], coord[1]));
+        console.log('✅ Polyline decoded successfully:', polyline.length, 'points');
+      } else if (route.geometry.coordinates && Array.isArray(route.geometry.coordinates)) {
+        // Handle GeoJSON format (if returned)
+        console.log('🔄 Processing GeoJSON coordinates...');
+        polyline = route.geometry.coordinates.map((coord: number[]) => {
+          return L.latLng(coord[1], coord[0]); // ORS returns [lng, lat], Leaflet expects [lat, lng]
+        });
+        console.log('✅ GeoJSON coordinates processed:', polyline.length, 'points');
+      }
+      
+      console.log('🔍 First few polyline points:', polyline.slice(0, 5));
     } else {
-      console.error('❌ No valid geometry coordinates found in response');
+      console.error('❌ No geometry found in route response');
       // Create fallback straight line
       polyline = [
         L.latLng(waypoints[0].lat, waypoints[0].lng),
@@ -114,7 +160,7 @@ export const getRouteDetails = async (
     
     routeCache.set(cacheKey, result);
     console.log('✅ Route calculation successful:', result);
-    console.log('🗺️ Polyline data will be passed to map:', result.polyline?.length, 'coordinates');
+    console.log('🗺️ Polyline ready for map with', result.polyline?.length, 'coordinates');
     
     return result;
 
