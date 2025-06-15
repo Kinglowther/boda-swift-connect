@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -71,14 +72,18 @@ interface LocationMapProps {
   showRouteInfo?: boolean;
 }
 
-// Component to auto-fit map bounds
+// Component to auto-fit map bounds only on initial load
 const RecenterAutomatically: React.FC<{ bounds: L.LatLngBounds | null }> = ({ bounds }) => {
   const map = useMap();
+  const hasInitialized = useRef(false);
+  
   useEffect(() => {
-    if (bounds && bounds.isValid()) {
+    if (bounds && bounds.isValid() && !hasInitialized.current) {
       map.fitBounds(bounds, { padding: [50, 50] });
+      hasInitialized.current = true;
     }
   }, [bounds, map]);
+  
   return null;
 };
 
