@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Navigation, Package, Clock } from 'lucide-react';
 import LocationMap from './LocationMap';
+import LocationAutocomplete from './LocationAutocomplete';
 import LoadingSpinner from './LoadingSpinner';
 import { getRouteDetails, geocodeLocation } from '@/services/distanceService';
 
@@ -116,63 +117,19 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
     }
   }, [useCurrentLocation, toast]);
   
-  // Geocode locations using real geocoding service
-  const geocodeLocationAsync = useCallback(async (address: string, isPickup: boolean) => {
-    if (!address.trim()) return;
-    
-    setLoading(true);
-    
-    try {
-      const coords = await geocodeLocation(address);
-      
-      if (coords) {
-        if (isPickup) {
-          setPickupCoords(coords);
-        } else {
-          setDropoffCoords(coords);
-        }
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Location not found",
-          description: `Could not find coordinates for "${address}". Please try a more specific location.`,
-        });
-      }
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      toast({
-        variant: "destructive",
-        title: "Geocoding failed",
-        description: "Unable to find location coordinates. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-  
-  const handlePickupLocationChange = useCallback((location: string) => {
-    setPickupLocation(location);
-    if (location.trim() && !useCurrentLocation) {
-      // Debounce geocoding
-      const timeoutId = setTimeout(() => {
-        geocodeLocationAsync(location, true);
-      }, 1000);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [geocodeLocationAsync, useCurrentLocation]);
-  
-  const handleDropoffLocationChange = useCallback((location: string) => {
-    setDropoffLocation(location);
-    if (location.trim()) {
-      // Debounce geocoding
-      const timeoutId = setTimeout(() => {
-        geocodeLocationAsync(location, false);
-      }, 1000);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [geocodeLocationAsync]);
+  // Handle pickup location selection from autocomplete
+  const handlePickupLocationSelect = useCallback((coords: { lat: number; lng: number }, displayName: string) => {
+    setPickupCoords(coords);
+    setPickupLocation(displayName);
+    console.log('Pickup location selected:', displayName, coords);
+  }, []);
+
+  // Handle dropoff location selection from autocomplete
+  const handleDropoffLocationSelect = useCallback((coords: { lat: number; lng: number }, displayName: string) => {
+    setDropoffCoords(coords);
+    setDropoffLocation(displayName);
+    console.log('Dropoff location selected:', displayName, coords);
+  }, []);
   
   // Toggle current location button
   const handleToggleCurrentLocation = () => {
@@ -316,25 +273,32 @@ const RequestRideForm: React.FC<RequestRideFormProps> = ({ onCancel, onSuccess }
                     {useCurrentLocation ? "Using Current Location" : "Use My Location"}
                   </Button>
                 </div>
-                <Input
-                  id="pickupLocation"
-                  placeholder="e.g., Karen, Nairobi"
-                  value={pickupLocation}
-                  onChange={(e) => handlePickupLocationChange(e.target.value)}
-                  disabled={useCurrentLocation}
-                  required
-                  className="boda-input"
-                />
+                {useCurrentLocation ? (
+                  <Input
+                    id="pickupLocation"
+                    placeholder="Using your current location..."
+                    value={pickupLocation}
+                    disabled={true}
+                    className="boda-input"
+                  />
+                ) : (
+                  <LocationAutocomplete
+                    value={pickupLocation}
+                    onChange={setPickupLocation}
+                    onLocationSelect={handlePickupLocationSelect}
+                    placeholder="e.g., Karen, Nairobi"
+                    className="boda-input"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="dropoffLocation" className="text-foreground">Dropoff Location</Label>
-                <Input
-                  id="dropoffLocation"
-                  placeholder="e.g., Kisumu, Kenya"
+                <LocationAutocomplete
                   value={dropoffLocation}
-                  onChange={(e) => handleDropoffLocationChange(e.target.value)}
-                  required
+                  onChange={setDropoffLocation}
+                  onLocationSelect={handleDropoffLocationSelect}
+                  placeholder="e.g., Kisumu, Kenya"
                   className="boda-input"
                 />
               </div>
