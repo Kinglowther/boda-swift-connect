@@ -121,13 +121,17 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   };
 
   const formatSelectedName = (displayName: string) => {
-    // For selected location, show only the first part (main location name)
+    // For selected location, show only the main location name, very short for mobile
     const parts = displayName.split(',');
     let mainName = parts[0].trim();
     
-    // If the main name is too long, truncate it
-    if (mainName.length > 30) {
-      mainName = mainName.substring(0, 27) + '...';
+    // Remove common prefixes/suffixes that make names long
+    mainName = mainName.replace(/^(MP|TRM|Avenue|Road|Street|Drive)\s+/i, '');
+    mainName = mainName.replace(/\s+(Hospital|Mall|Center|Centre|Market|Plaza|Building)$/i, '');
+    
+    // If still too long, truncate to fit mobile screen (max 20 characters)
+    if (mainName.length > 20) {
+      mainName = mainName.substring(0, 17) + '...';
     }
     
     return mainName;
