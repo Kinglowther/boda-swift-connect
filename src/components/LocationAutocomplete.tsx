@@ -120,12 +120,25 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     return displayName;
   };
 
+  const formatSelectedName = (displayName: string) => {
+    // For selected location, show only the first part (main location name)
+    const parts = displayName.split(',');
+    let mainName = parts[0].trim();
+    
+    // If the main name is too long, truncate it
+    if (mainName.length > 30) {
+      mainName = mainName.substring(0, 27) + '...';
+    }
+    
+    return mainName;
+  };
+
   const handleSelect = (suggestion: LocationSuggestion) => {
-    const formattedName = formatDisplayName(suggestion.display_name);
+    const formattedName = formatSelectedName(suggestion.display_name);
     onChange(formattedName);
     onLocationSelect(
       { lat: suggestion.lat, lng: suggestion.lon }, 
-      formattedName
+      suggestion.display_name // Pass full name to context but display shortened version
     );
     setOpen(false);
   };
@@ -145,7 +158,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           disabled={disabled}
         >
           <MapPin className="mr-2 h-4 w-4 shrink-0" />
-          {value || placeholder}
+          <span className="truncate">{value || placeholder}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
